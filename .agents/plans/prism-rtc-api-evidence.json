@@ -1,0 +1,151 @@
+{
+  "inspected_on": "2026-11-09",
+  "ten_commit": "dd78994529c927e6e83065f0904b33b7c5a3d428",
+  "registry_endpoint": "https://ten-store.theten.ai/api/ten-cloud-store/v3/packages",
+  "registry_query": {
+    "type": "extension",
+    "name": "agora_rtc",
+    "version": "=0.23.9-t1",
+    "page": 1,
+    "pageSize": 20
+  },
+  "package": {
+    "name": "agora_rtc",
+    "version": "0.23.9-t1",
+    "supports": [
+      {
+        "os": "linux",
+        "arch": "x64"
+      }
+    ],
+    "registry_hash": "6f08c87c362d30bbfd831899435fec06982a2924bd9cc0f5cb7e936974bf5731",
+    "archive_sha256": "83b46c93ec15b422dabd6f70fca0475a310d8ad08e5307d47ee5521b02374042",
+    "members": [
+      {
+        "path": "manifest.json",
+        "size_bytes": 22860
+      },
+      {
+        "path": "property.json",
+        "size_bytes": 495
+      },
+      {
+        "path": "lib/liblinux_audio_hy_extension.so",
+        "size_bytes": 5600912
+      },
+      {
+        "path": "lib/libagora_rtc.so",
+        "size_bytes": 32079144
+      }
+    ]
+  },
+  "declared_message_names": {
+    "cmd_in": [
+      "flush",
+      "join",
+      "leave",
+      "publish",
+      "unpublish",
+      "update_asr",
+      "update_subscription_rules",
+      "ten_event",
+      "get_subscribed_remote_users"
+    ],
+    "cmd_out": [
+      "on_user_joined",
+      "on_user_left",
+      "on_user_info_updated",
+      "on_user_video_track_state_changed",
+      "on_user_audio_track_state_changed",
+      "on_user_track_state_subscribed",
+      "on_user_track_state_unsubscribed",
+      "on_remote_audio_track_statistics",
+      "on_connected",
+      "on_disconnected",
+      "on_connection_lost",
+      "on_connection_failure",
+      "on_connection_error",
+      "on_token_expired",
+      "on_token_will_expire",
+      "on_first_remote_video_frame",
+      "on_first_remote_video_decoded",
+      "on_first_remote_audio_frame",
+      "on_first_remote_audio_decoded",
+      "on_datastream_error",
+      "on_subscribed_remote_users_changed"
+    ],
+    "data_in": [
+      "data"
+    ],
+    "data_out": [
+      "data",
+      "asr_result",
+      "error",
+      "on_asr_worker_count_changed",
+      "sos",
+      "eos"
+    ],
+    "audio_frame_in": [
+      "pcm_frame"
+    ],
+    "audio_frame_out": [
+      "pcm_frame"
+    ]
+  },
+  "flush_command_schema": {
+    "name": "flush"
+  },
+  "receive_track_statistics_schema": {
+    "name": "on_remote_audio_track_statistics",
+    "property": {
+      "properties": {
+        "stream_id": {
+          "type": "uint32"
+        },
+        "network_transport_delay": {
+          "type": "int32"
+        },
+        "jitter_buffer_delay": {
+          "type": "uint32"
+        },
+        "e2e_delay_ms": {
+          "type": "int32"
+        }
+      }
+    }
+  },
+  "timestamp_and_audio_properties": {
+    "audio_frame_send_delay_ms": {
+      "type": "int32"
+    },
+    "use_frame_counted_audio_timestamp": {
+      "type": "bool"
+    },
+    "subscribe_audio_sample_rate": {
+      "type": "int32"
+    },
+    "subscribe_audio_num_of_channels": {
+      "type": "int32"
+    },
+    "subscribe_audio_frame_source": {
+      "type": "string"
+    }
+  },
+  "comparison": {
+    "version": "0.27.0-rc2",
+    "same_message_names_by_direction": {
+      "cmd_in": true,
+      "cmd_out": true,
+      "data_in": true,
+      "data_out": true,
+      "audio_frame_in": true,
+      "audio_frame_out": true
+    }
+  },
+  "scope": {
+    "native_implementation_source_in_archive": false,
+    "native_code_executed": false,
+    "live_rtc_call_performed": false,
+    "conclusion": "No measured per-response playback cursor or drain receipt is declared in the inspected API. Undocumented result fields and private product APIs remain unverified."
+  }
+}
