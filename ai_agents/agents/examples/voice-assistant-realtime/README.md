@@ -5,7 +5,7 @@ A real-time voice assistant optimized for ultra-low-latency conversation using v
 ## Features
 
 - **Ultra-Low Latency Voice Interaction**: Direct speech-to-speech conversation with minimal delay
-- **Multi-Provider Support**: Compatible with OpenAI GPT Realtime, Azure Voice AI, Gemini 2.0 Flash, GLM, StepFun, and other voice-to-voice models
+- **Multi-Provider Support**: Compatible with Rime Prism, OpenAI GPT Realtime, Azure Voice AI, Gemini 2.0 Flash, GLM, StepFun, and other voice-to-voice models
 
 ## Prerequisites
 
@@ -15,6 +15,7 @@ A real-time voice assistant optimized for ultra-low-latency conversation using v
    - `AGORA_APP_ID` - Your Agora App ID (required)
 
 2. **Voice-to-Voice Model Provider** (choose one):
+   - **Rime Prism**: `RIME_API_KEY` - Select the `voice_assistant_prism` graph
    - **OpenAI**: `OPENAI_API_KEY` - For GPT Realtime
    - **Azure**: `AZURE_AI_FOUNDRY_API_KEY` and `AZURE_AI_FOUNDRY_BASE_URI` - For Azure Voice AI
    - **Gemini**: `GEMINI_API_KEY` - For Gemini 2.0 Flash
@@ -38,6 +39,8 @@ AGORA_APP_ID=your_agora_app_id_here
 AGORA_APP_CERTIFICATE=your_agora_certificate_here
 
 # Voice-to-Voice Model Provider (choose one)
+RIME_API_KEY=your_rime_api_key_here
+# OR
 OPENAI_API_KEY=your_openai_api_key_here
 # OR
 AZURE_AI_FOUNDRY_API_KEY=your_azure_api_key_here
@@ -78,6 +81,17 @@ The realtime voice assistant starts with all capabilities enabled.
 - **TMAN Designer**: http://localhost:49483
 
 ## Configuration
+
+The `voice_assistant_prism` graph uses Rime Prism for speech-to-speech with
+16 kHz input and 24 kHz output. Set `RIME_API_KEY` in the ignored `ai_agents/.env`,
+run `task install` and `task run`, then select that graph in the playground.
+The existing `voice_assistant_realtime` graph uses OpenAI. Credentials for the
+unselected provider are not required.
+
+Prism handles turn detection and uses its playback estimate because the RTC
+extension does not declare measured playback reports. See the
+[Rime extension documentation](../../ten_packages/extension/rime_mllm_python/README.md)
+for configuration, tool behavior, interruption limits, and required RTC testing.
 
 The realtime voice assistant is configured in `tenapp/property.json`:
 

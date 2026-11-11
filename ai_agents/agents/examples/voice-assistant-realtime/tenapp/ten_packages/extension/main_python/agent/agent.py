@@ -4,7 +4,6 @@ from ten_ai_base.const import CMD_PROPERTY_RESULT
 from ten_ai_base.mllm import (
     DATA_MLLM_IN_FUNCTION_CALL_OUTPUT,
     DATA_MLLM_IN_REGISTER_TOOL,
-    DATA_MLLM_IN_SEND_MESSAGE_ITEM,
     DATA_MLLM_OUT_FUNCTION_CALL,
     DATA_MLLM_OUT_INTERRUPTED,
     DATA_MLLM_OUT_REQUEST_TRANSCRIPT,
@@ -23,7 +22,17 @@ from ten_ai_base.struct import (
 from ..helper import _send_cmd, _send_data
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult
-from .events import *
+from .events import (
+    AgentEvent,
+    FunctionCallEvent,
+    InputTranscriptEvent,
+    OutputTranscriptEvent,
+    ServerInterruptEvent,
+    SessionReadyEvent,
+    ToolRegisterEvent,
+    UserJoinedEvent,
+    UserLeftEvent,
+)
 
 
 class Agent:
@@ -149,39 +158,51 @@ class Agent:
         Handle a tool call event.
         This method is typically called when the MLLM server makes a function call.
         """
-        self.ten_env.log_info(
-            f"Handling tool call: {tool_call_id}, {name}, {arguments}"
-        )
-        src_extension_name = self.tool_registry.get(name)
-        result, _ = await _send_cmd(
+        try:
+            source = self.tool_registry.get(name)
+            if source is None:
+                raise ValueError("tool is not registered")
+            parsed_arguments = json.loads(arguments)
+            if not isinstance(parsed_arguments, dict):
+                raise ValueError("tool arguments must be an object")
+            result, error = await _send_cmd(
+                self.ten_env,
+                "tool_call",
+                source,
+                {"name": name, "arguments": parsed_arguments},
+            )
+            if (
+                error
+                or result is None
+                or result.get_status_code() != StatusCode.OK
+            ):
+                raise ValueError("tool command failed")
+            encoded, error = result.get_property_to_json(CMD_PROPERTY_RESULT)
+            if error:
+                raise ValueError("tool result is missing")
+            tool_result: LLMToolResult = json.loads(encoded)
+            if tool_result["type"] != "llmresult" or not isinstance(
+                tool_result["content"], str
+            ):
+                raise ValueError("unsupported tool result")
+            content = tool_result["content"]
+        except Exception:
+            self.ten_env.log_warn(
+                "Tool execution failed; returning an error result"
+            )
+            content = json.dumps(
+                {"error": "tool_failed", "message": "Tool execution failed"}
+            )
+        error = await _send_data(
             self.ten_env,
-            "tool_call",
-            src_extension_name,
-            {"name": name, "arguments": json.loads(arguments)},
+            DATA_MLLM_IN_FUNCTION_CALL_OUTPUT,
+            "v2v",
+            MLLMClientFunctionCallOutput(
+                output=content, call_id=tool_call_id
+            ).model_dump(),
         )
-
-        if result.get_status_code() == StatusCode.OK:
-            r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
-            tool_result: LLMToolResult = json.loads(r)
-
-            self.ten_env.log_info(f"tool_result: {tool_result}")
-
-            if tool_result["type"] == "llmresult":
-                result_content = tool_result["content"]
-                if isinstance(result_content, str):
-                    await _send_data(
-                        self.ten_env,
-                        DATA_MLLM_IN_FUNCTION_CALL_OUTPUT,
-                        "v2v",
-                        MLLMClientFunctionCallOutput(
-                            output=result_content,
-                            call_id=tool_call_id,
-                        ).model_dump(),
-                    )
-                else:
-                    self.ten_env.log_error(
-                        f"Unknown tool result content: {result_content}"
-                    )
+        if error:
+            raise RuntimeError("tool result delivery failed")
 
     async def stop(self):
         """

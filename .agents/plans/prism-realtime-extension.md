@@ -1,6 +1,7 @@
 # Prism realtime extension implementation plan
 
-Date: 2026-11-09. Status: source investigation complete; implementation pending.
+Updated: 2026-11-11. Status: implementation and protocol checks complete;
+Linux RTC acceptance checks pending.
 
 Add Rime Prism as a speech-to-speech provider through TEN's existing MLLM
 interface. Developers should be able to select Prism in the realtime voice
@@ -224,10 +225,10 @@ and the AI Agents workflow calls it for the realtime example. Keep mock tests
 credential-free and put live-vendor checks behind explicit opt-in. ASR/TTS
 guarders do not validate a speech-to-speech provider.
 
-Use two reviewable changes: the generic realtime-controller tool/flush fix,
-then the Prism extension, graph, and docs. Include a regression test for the
-controller fix. Request the supported playback contract from Agora separately;
-its answer can improve fidelity without preventing the estimate-based work.
+The generic realtime-controller tool/flush fix and the Prism provider share the
+extension's regression harness and ship together. Request the supported playback
+contract from Agora separately; its answer can improve fidelity without
+preventing the estimate-based work.
 
 ## Questions that need Agora implementation knowledge
 
@@ -240,7 +241,7 @@ its answer can improve fidelity without preventing the estimate-based work.
 4. Which TEN runtime and RTC package versions will the hosted product release
    use, and does its Python baseline allow the Rime SDK's Python 3.11 minimum?
 
-## Verification completed for this plan
+## Implementation and verification
 
 - Fork and local branch created from the recorded baseline.
 - Public RTC package downloaded and its declared API inspected, including an
@@ -249,5 +250,30 @@ its answer can improve fidelity without preventing the estimate-based work.
   test discovery, and CI entry points inspected.
 - Prism public contract and the local Rime server's audio/playback behavior
   cross-checked. This document contains only public source/API facts.
-- This change is an implementation plan. It does not implement the extension
-  or establish runtime/RTC test results.
+- Implemented the provider, separately selectable Prism graph, backend
+  configuration, documentation, and shared-controller tool/flush handling.
+- `task test-extension EXTENSION=agents/ten_packages/extension/rime_mllm_python`:
+  **31 passed** on Python 3.10.21, with official dependencies installed by
+  `tman` 0.11.75. The adapter tests use real TEN base models/output helpers and
+  double the native runtime. Package registration is covered explicitly.
+- Protocol tests use a real local WebSocket and no vendor credentials. They
+  cover acknowledged setup, readiness races, tool-result ordering/deduplication,
+  stale rounds, malformed events, cancellation, bounded startup/acknowledgment
+  waits, audio formats/buffering, transcripts, and terminal disconnects.
+- Shared-controller tests verify slow tools do not block RTC flush, failed
+  flushes are logged, tool failures return structured results, and shutdown
+  joins owned tasks.
+- Live Prism API checks passed: authenticated session setup, continuous silence
+  input, a typed reply with PCM audio/final captions, and a function call with
+  an acknowledged result and completed continuation. These were backend checks;
+  no RTC receiver was involved.
+- `task check` passed. Targeted Pylint on all changed Python implementation
+  files passed at 10.00/10. Graph structure, RTC input properties, unchanged
+  OpenAI graph, dependency declarations, and JSON configuration were checked.
+- Repository-wide `task lint` is blocked by missing installed TEN/vendor
+  dependencies in other extensions. `task test` stops during the existing
+  Tencent TTS suite's collection because `opentelemetry` is not installed in
+  the isolated host environment. These full-repository checks have not passed.
+- Docker is not running. The supported Linux RTC smoke test and a real OpenAI
+  graph regression call remain pending. Actual receiver playback position,
+  audible post-flush tail, mute/unmute, and estimate accuracy are unverified.

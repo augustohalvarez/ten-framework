@@ -17,6 +17,7 @@ from ten_runtime import (
     AsyncTenEnv,
     Cmd,
     Data,
+    StatusCode,
 )
 
 from .agent.agent import Agent
@@ -31,7 +32,7 @@ from .agent.events import (
     UserLeftEvent,
 )
 from .helper import _send_cmd, _send_data
-from .config import MainControlConfig  # assume extracted from your base model
+from .config import MainControlConfig
 
 
 class MainControlExtension(AsyncExtension):
@@ -49,6 +50,8 @@ class MainControlExtension(AsyncExtension):
         self.stopped: bool = False
         self._rtc_user_count: int = 0
         self.current_metadata: dict = {"session_id": "0"}
+        self._event_task: asyncio.Task | None = None
+        self._tool_tasks: set[asyncio.Task] = set()
 
     async def on_init(self, ten_env: AsyncTenEnv):
         self.ten_env = ten_env
@@ -60,7 +63,7 @@ class MainControlExtension(AsyncExtension):
         self.agent = Agent(ten_env)
 
         # Start agent event loop
-        asyncio.create_task(self._consume_agent_events())
+        self._event_task = asyncio.create_task(self._consume_agent_events())
 
     async def on_start(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_start")
@@ -78,13 +81,20 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+        tasks = list(self._tool_tasks)
+        if self._event_task is not None:
+            tasks.append(self._event_task)
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        self._tool_tasks.clear()
         if self.agent:
             await self.agent.stop()
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
+    async def on_cmd(self, _ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data):
+    async def on_data(self, _ten_env: AsyncTenEnv, data: Data):
         await self.agent.on_data(data)
 
     async def _consume_agent_events(self):
@@ -107,9 +117,15 @@ class MainControlExtension(AsyncExtension):
                     case ToolRegisterEvent():
                         await self.agent.register_tool(event.tool, event.source)
                     case FunctionCallEvent():
-                        await self.agent.call_tool(
-                            event.call_id, event.function_name, event.arguments
+                        task = asyncio.create_task(
+                            self.agent.call_tool(
+                                event.call_id,
+                                event.function_name,
+                                event.arguments,
+                            )
                         )
+                        self._tool_tasks.add(task)
+                        task.add_done_callback(self._tool_finished)
                     case InputTranscriptEvent():
                         self.current_metadata = {
                             "session_id": event.metadata.get(
@@ -158,6 +174,13 @@ class MainControlExtension(AsyncExtension):
                 self.ten_env.log_error(
                     f"[MainControlExtension] Event processing error: {e}"
                 )
+
+    def _tool_finished(self, task):
+        self._tool_tasks.discard(task)
+        if not task.cancelled() and task.exception() is not None:
+            self.ten_env.log_error(
+                "[MainControlExtension] Tool result delivery failed"
+            )
 
     async def _greeting_if_ready(self):
         """
@@ -252,5 +275,10 @@ class MainControlExtension(AsyncExtension):
         """
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
-        await _send_cmd(self.ten_env, "flush", "agora_rtc")
-        self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
+        result, error = await _send_cmd(self.ten_env, "flush", "agora_rtc")
+        if error or result is None or result.get_status_code() != StatusCode.OK:
+            self.ten_env.log_error("[MainControlExtension] RTC flush failed")
+        else:
+            self.ten_env.log_info(
+                "[MainControlExtension] Interrupt signal sent"
+            )
