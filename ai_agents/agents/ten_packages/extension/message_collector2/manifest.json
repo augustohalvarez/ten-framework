@@ -21,7 +21,11 @@
   },
   "api": {
     "property": {
-      "properties": {}
+      "properties": {
+        "coalesce_transcripts": {
+          "type": "bool"
+        }
+      }
     },
     "data_in": [
       {

@@ -202,7 +202,9 @@
               "name": "message_collector",
               "addon": "message_collector2",
               "extension_group": "transcriber",
-              "property": {}
+              "property": {
+                "coalesce_transcripts": true
+              }
             },
             {
               "type": "extension",

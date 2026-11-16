@@ -39,8 +39,9 @@ async def received(environment):
 async def test_coalescing_preserves_finals_and_complete_packet_groups(
     ten_modules,
 ):
-    environment = ten_modules.environment({})
+    environment = ten_modules.environment({"coalesce_transcripts": True})
     collector = ten_modules.collector.MessageCollector2Extension("collector")
+    await collector.on_init(environment)
     for index in range(1000):
         await collector.on_data(
             environment, caption(ten_modules, f"draft {index}")
@@ -51,7 +52,6 @@ async def test_coalescing_preserves_finals_and_complete_packet_groups(
     await collector.on_data(
         environment, caption(ten_modules, "Four.", True, "next")
     )
-    await collector.on_init(environment)
     try:
         assert (await received(environment))["text"] == long_text
         assert (await received(environment))["text"] == "Four."
@@ -64,8 +64,9 @@ async def test_coalescing_preserves_finals_and_complete_packet_groups(
 async def test_interruption_discards_queued_partials_but_preserves_finals(
     ten_modules,
 ):
-    environment = ten_modules.environment({})
+    environment = ten_modules.environment({"coalesce_transcripts": True})
     collector = ten_modules.collector.MessageCollector2Extension("collector")
+    await collector.on_init(environment)
     await collector.on_data(
         environment, caption(ten_modules, "Greeting", True, "greeting")
     )
@@ -79,7 +80,6 @@ async def test_interruption_discards_queued_partials_but_preserves_finals(
     await collector.on_data(
         environment, caption(ten_modules, "Four.", True, "next")
     )
-    await collector.on_init(environment)
     try:
         assert [(await received(environment))["text"] for _ in range(3)] == [
             "Greeting",
@@ -95,7 +95,7 @@ async def test_interruption_discards_queued_partials_but_preserves_finals(
 async def test_queue_capacity_and_flush_release_a_stale_blocked_partial(
     ten_modules,
 ):
-    environment = ten_modules.environment({})
+    environment = ten_modules.environment({"coalesce_transcripts": True})
     collector = ten_modules.collector.MessageCollector2Extension("collector")
     for index in range(ten_modules.collector.MAX_PENDING_MESSAGES):
         await collector.on_data(
@@ -117,3 +117,29 @@ async def test_queue_capacity_and_flush_release_a_stale_blocked_partial(
     await collector.on_data(environment, ten_modules.message("flush", {}))
     await asyncio.wait_for(pending, 2)
     assert not collector.pending
+
+
+@pytest.mark.asyncio
+async def test_other_consumers_keep_fifo_partial_updates_by_default(
+    ten_modules,
+):
+    environment = ten_modules.environment({})
+    collector = ten_modules.collector.MessageCollector2Extension("collector")
+    await collector.on_init(environment)
+    try:
+        await collector.on_data(
+            environment, caption(ten_modules, "First partial")
+        )
+        await collector.on_data(
+            environment, caption(ten_modules, "Second partial")
+        )
+        await collector.on_data(
+            environment, caption(ten_modules, "Final", True)
+        )
+        assert [(await received(environment))["text"] for _ in range(3)] == [
+            "First partial",
+            "Second partial",
+            "Final",
+        ]
+    finally:
+        await collector.on_stop(environment)

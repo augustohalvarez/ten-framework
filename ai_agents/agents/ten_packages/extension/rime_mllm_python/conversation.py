@@ -10,6 +10,7 @@ class Reply:
     generation: int
     transcript: str = ""
     caption_final: bool = False
+    review_ids: set[str] = field(default_factory=set)
     completed: bool = False
     terminal: bool = False
     calls: set[str] = field(default_factory=set)

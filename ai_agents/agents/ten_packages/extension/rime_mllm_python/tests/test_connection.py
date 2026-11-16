@@ -266,7 +266,8 @@ async def test_rejected_tool_result_ends_instead_of_waiting(peer, connection):
     with pytest.raises(PrismError) as failure:
         await result
     assert failure.value.fatal
-    assert (await receive(events, "error"))["error"]["scope"] == "session"
+    assert (await receive(events, "error"))["error"]["scope"] == "event"
+    assert client.terminal_error is not None
     assert not client.conversation.result_events
 
 

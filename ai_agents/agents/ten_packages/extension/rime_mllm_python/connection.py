@@ -9,17 +9,24 @@ from typing import Awaitable, Callable
 
 import aiohttp
 
-from .config import RimeRealtimeConfig
+from .config import RimeRealtimeConfig, SessionSettingsUpdate
 from .conversation import Conversation
 
 
 class PrismError(Exception):
     """A sanitized integration failure with a stable machine-readable code."""
 
-    def __init__(self, code: str, message: str, fatal: bool = False):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        fatal: bool = False,
+        event: dict | None = None,
+    ):
         super().__init__(message)
         self.code = code
         self.fatal = fatal
+        self.event = event
 
 
 class PrismConnection:
@@ -47,6 +54,9 @@ class PrismConnection:
         self._typed_ready = False
         self._triggers: deque[dict] = deque()
         self._trigger_inflight = None
+        self.session_info: dict = {}
+        self.session_event: dict = {}
+        self.terminal_error: PrismError | None = None
 
     @staticmethod
     def event_id() -> str:
@@ -149,14 +159,36 @@ class PrismConnection:
     async def update_tools(self, tools: list[dict]) -> None:
         """Apply complete tool lists in order, including registration at startup."""
         async with self._settings_lock:
-            self.tools = tools
             if self.ready:
                 await self.acknowledged_request(
                     {
                         "type": "session.update",
-                        "session": self.config.session_settings(self.tools),
+                        "session": self.config.session_settings(tools),
                     }
                 )
+            self.tools = tools
+
+    async def update_session(self, updates: SessionSettingsUpdate) -> dict:
+        """Commit local mutable settings only after the server accepts them."""
+        async with self._settings_lock:
+            if not self.ready:
+                raise PrismError(
+                    "not_ready", "Prism session is not initialized"
+                )
+            candidate = RimeRealtimeConfig.model_validate(
+                {
+                    **self.config.model_dump(exclude_none=True),
+                    **updates.model_dump(exclude_unset=True),
+                }
+            )
+            result = await self.acknowledged_request(
+                {
+                    "type": "session.update",
+                    "session": candidate.session_settings(self.tools),
+                }
+            )
+            self.config = candidate
+            return result.get("session", self.session_info)
 
     async def send_audio(self, audio: bytes) -> None:
         """Append headerless 16 kHz mono PCM16, including silent frames."""
@@ -171,6 +203,9 @@ class PrismConnection:
 
     async def trigger(self, text: str | None) -> None:
         """Queue one typed turn or proactive reply until Prism becomes idle."""
+        if self.config.manual_turns and text is None:
+            await self.send({"type": "response.create", "response": {}})
+            return
         if len(self._triggers) >= 8:
             raise PrismError("trigger_queue_full", "Too many pending replies")
         request = {"metadata": {"prism_cause": "proactive"}}
@@ -218,13 +253,19 @@ class PrismConnection:
         )
 
     async def _dispatch(self, event: dict) -> None:
+        event = self._redact_event(event)
         kind = event["type"]
+        if kind in {"session.created", "session.updated"}:
+            self.session_info = event.get("session", self.session_info)
+            self.session_event = event
         request_id = event.get("prism_request_event_id")
         if kind == "error":
             error = event["error"]
             request_id = error.get("event_id")
             failure = PrismError(
-                error.get("code", "vendor_error"), "Prism refused a request"
+                error.get("code", "vendor_error"),
+                "Prism refused a request",
+                event=event,
             )
             if error.get("scope") == "session" or (
                 request_id == self._setup_id and not self.ready
@@ -307,6 +348,20 @@ class PrismConnection:
             )
         await self._send_trigger()
 
+    def _redact_event(self, value):
+        """Vendor-provided diagnostics must not echo the authentication key."""
+        if isinstance(value, str):
+            key = self.config.api_key.get_secret_value()
+            return value.replace(key, "[redacted]") if key else value
+        if isinstance(value, list):
+            return [self._redact_event(item) for item in value]
+        if isinstance(value, dict):
+            return {
+                self._redact_event(name): self._redact_event(item)
+                for name, item in value.items()
+            }
+        return value
+
     async def _receive(self) -> None:
         try:
             async for message in self._socket:
@@ -335,8 +390,10 @@ class PrismConnection:
             if not self._initialized.done():
                 self._initialized.set_exception(failure)
             elif not self.stopping:
+                self.terminal_error = failure
                 await self.on_event(
-                    {
+                    failure.event
+                    or {
                         "type": "error",
                         "error": {
                             "code": failure.code,

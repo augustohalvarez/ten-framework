@@ -9,4 +9,18 @@
 3. Verify the complete change, refresh the separate test app, and commit/push
    the branch. The fourth review finding about write deadlines is excluded.
 
-Status: step 1 in progress.
+Step 1 verified: 38 Python tests passed. Native fatal-startup shutdown completed
+without the demo error probe. The real early-interruption check passed with
+three distinct assistant rows and a 23 ms provider-to-visible-caption delay.
+An earlier RTC attempt hit the existing audio-backlog guard while broad checks
+ran concurrently; the isolated rerun passed. Whole-extension formatting passed
+for 1,048 files. Full-suite collection needs the other extensions' dependencies.
+
+Status: step 2 in progress.
+
+Feature interface: configuration stays backward compatible; acknowledged
+`prism_update_session` commands change mutable settings. Initial-only settings
+remain initial-only. `prism_server_event` carries provider diagnostics; transcript
+metadata preserves event/turn identities and timestamps. A configured review
+extension handles asynchronous `prism_review` commands. Manual input uses explicit
+start/commit controls and the existing create-response operation.

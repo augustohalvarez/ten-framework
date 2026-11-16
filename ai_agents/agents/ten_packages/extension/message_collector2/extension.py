@@ -38,10 +38,16 @@ class MessageCollector2Extension(AsyncExtension):
         self.stopped = False
         self.flush_generation = 0
         self.sender = None
+        self.coalesce_transcripts = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_init")
         await super().on_init(ten_env)
+
+        properties, _ = await ten_env.get_property_to_json(None)
+        self.coalesce_transcripts = json.loads(properties or "{}").get(
+            "coalesce_transcripts", False
+        )
 
         self.sender = asyncio.create_task(self._process_queue(ten_env))
 
@@ -110,7 +116,7 @@ class MessageCollector2Extension(AsyncExtension):
     async def _queue_message(self, message: PendingMessage):
         generation = self.flush_generation
         async with self.available:
-            if message.key is not None:
+            if self.coalesce_transcripts and message.key is not None:
                 for pending in reversed(self.pending):
                     if pending.key != message.key:
                         continue

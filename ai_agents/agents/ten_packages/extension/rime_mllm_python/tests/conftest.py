@@ -198,6 +198,7 @@ class FakeEnv:
         self.data = asyncio.Queue()
         self.audio = asyncio.Queue()
         self.commands = asyncio.Queue()
+        self.results = asyncio.Queue()
         self.logs = []
         self.tool_gate = asyncio.Event()
         self.created = None
@@ -210,6 +211,9 @@ class FakeEnv:
 
     async def send_data(self, data):
         await self.data.put(data)
+
+    async def return_result(self, result):
+        await self.results.put(result)
 
     async def send_audio_frame(self, frame):
         await self.audio.put(frame)

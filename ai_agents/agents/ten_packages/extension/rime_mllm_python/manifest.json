@@ -33,12 +33,6 @@
     ],
     "property": {
       "properties": {
-        "api_key": {
-          "type": "string"
-        },
-        "endpoint": {
-          "type": "string"
-        },
         "voice": {
           "type": "string"
         },
@@ -48,8 +42,78 @@
         "interrupt_response": {
           "type": "bool"
         },
+        "speed": {
+          "type": "float64"
+        },
+        "interrupt_min_words": {
+          "type": "int32"
+        },
+        "interrupt_phrases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acknowledgment_phrases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "endpoint": {
+          "type": "string"
+        },
         "eagerness": {
           "type": "string"
+        },
+        "manual_turns": {
+          "type": "bool"
+        },
+        "prism_end_of_turn_timeout_ms": {
+          "type": "int32"
+        },
+        "end_of_turn_min_silence_ms": {
+          "type": "int32"
+        },
+        "prism_recording": {
+          "type": "object",
+          "properties": {
+            "keep": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "external_id": {
+              "type": "string"
+            }
+          }
+        },
+        "prism_review": {
+          "type": "object",
+          "properties": {
+            "on_timeout": {
+              "type": "string"
+            },
+            "timeout_ms": {
+              "type": "int32"
+            },
+            "timeout_line": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "on_timeout"
+          ]
+        },
+        "review_extension": {
+          "type": "string"
+        },
+        "emit_server_events": {
+          "type": "bool"
         },
         "startup_timeout": {
           "type": "float64"
@@ -58,6 +122,253 @@
           "type": "int32"
         }
       }
-    }
+    },
+    "cmd_in": [
+      {
+        "name": "prism_update_session",
+        "property": {
+          "properties": {
+            "settings": {
+              "type": "object",
+              "properties": {
+                "voice": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "interrupt_response": {
+                  "type": "bool"
+                },
+                "speed": {
+                  "type": "float64"
+                },
+                "interrupt_min_words": {
+                  "type": "int32"
+                },
+                "interrupt_phrases": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "acknowledgment_phrases": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "settings"
+          ]
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "session": {
+                "type": "object"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "accepted": {
+                "type": "bool"
+              },
+              "error": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "prism_input_audio_start",
+        "property": {},
+        "result": {
+          "property": {
+            "properties": {
+              "session": {
+                "type": "object"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "accepted": {
+                "type": "bool"
+              },
+              "error": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "prism_input_audio_commit",
+        "property": {},
+        "result": {
+          "property": {
+            "properties": {
+              "session": {
+                "type": "object"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "accepted": {
+                "type": "bool"
+              },
+              "error": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "prism_input_audio_clear",
+        "property": {},
+        "result": {
+          "property": {
+            "properties": {
+              "session": {
+                "type": "object"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "accepted": {
+                "type": "bool"
+              },
+              "error": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "prism_create_response",
+        "property": {},
+        "result": {
+          "property": {
+            "properties": {
+              "session": {
+                "type": "object"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "accepted": {
+                "type": "bool"
+              },
+              "error": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "prism_cancel_response",
+        "property": {},
+        "result": {
+          "property": {
+            "properties": {
+              "session": {
+                "type": "object"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "accepted": {
+                "type": "bool"
+              },
+              "error": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "prism_review",
+        "property": {
+          "properties": {
+            "review_id": {
+              "type": "string"
+            },
+            "response_id": {
+              "type": "string"
+            },
+            "item_id": {
+              "type": "string"
+            },
+            "index": {
+              "type": "int32"
+            },
+            "text": {
+              "type": "string"
+            },
+            "event_id": {
+              "type": "string"
+            },
+            "server_time_ms": {
+              "type": "int32"
+            }
+          },
+          "required": [
+            "review_id",
+            "response_id",
+            "item_id",
+            "index",
+            "text"
+          ]
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "decision": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action"
+                ]
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "prism_server_event",
+        "property": {
+          "properties": {
+            "event": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "event"
+          ]
+        }
+      }
+    ]
   }
 }

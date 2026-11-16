@@ -4,6 +4,8 @@ import asyncio
 import base64
 import json
 
+from ten_runtime import Cmd, CmdResult, Data, Loc, StatusCode
+
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
@@ -29,8 +31,10 @@ from .config import (
     OUTPUT_SAMPLE_RATE,
     SAMPLE_WIDTH,
     RimeRealtimeConfig,
+    SessionSettingsUpdate,
 )
 from .connection import PrismConnection, PrismError
+from .controls import ProviderCommand, ReviewDecision, ReviewRequest
 
 
 class RimeRealtimeExtension(AsyncMLLMBaseExtension):
@@ -44,6 +48,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
         self._audio_sender = None
         self._pending_text = None
         self._tools = {}
+        self._review_tasks: dict[str, tuple[str, asyncio.Task]] = {}
 
     async def on_init(self, ten_env):
         # Input is clocked here; the base's detached queue consumer is unused.
@@ -65,6 +70,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
             try:
                 await self.start_connection()
             except Exception as error:
+                server_event = getattr(error, "event", None)
+                if server_event:
+                    await self._publish_event(server_event)
                 await self._report(
                     getattr(error, "code", "startup_failed"),
                     "Prism session could not start",
@@ -76,8 +84,25 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
         for message in self.message_context:
             await self._add_history(message)
         await self.connection.update_tools(list(self._tools.values()))
+        if not self.is_connected():
+            raise PrismError(
+                "connection_closed",
+                "Prism ended during initialization",
+                fatal=True,
+            )
         self._audio_sender = asyncio.create_task(self._send_input())
-        await self.send_server_session_ready(MLLMServerSessionReady())
+        await self.send_server_session_ready(
+            MLLMServerSessionReady(
+                metadata={
+                    **self._event_metadata(self.connection.session_event),
+                    "version": self.connection.session_info.get("version"),
+                    "request_id": self.connection.session_info.get(
+                        "request_id"
+                    ),
+                    "session": self.connection.session_info,
+                }
+            )
+        )
 
     async def on_stop(self, ten_env):
         self.stopped = True
@@ -85,6 +110,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
 
     async def stop_connection(self):
         self.input_audio.buffer.clear()
+        await self._cancel_reviews()
         if self._audio_sender is not None:
             if self._audio_sender is not asyncio.current_task():
                 self._audio_sender.cancel()
@@ -170,6 +196,154 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                 isinstance(error, PrismError) and error.fatal,
             )
 
+    async def on_cmd(self, ten_env, command):
+        """Apply typed controls; only session updates promise a server acknowledgment."""
+        result = CmdResult.create(StatusCode.OK, command)
+        try:
+            kind = ProviderCommand(command.get_name())
+            if not self.is_connected():
+                raise PrismError(
+                    "not_ready", "Prism session is not initialized"
+                )
+            encoded, error = command.get_property_to_json(None)
+            if error:
+                raise ValueError("cannot read command properties")
+            payload = json.loads(encoded or "{}")
+            if not isinstance(payload, dict):
+                raise ValueError("command properties must be an object")
+            if kind == ProviderCommand.UPDATE_SESSION:
+                if set(payload) != {"settings"}:
+                    raise ValueError("session updates require settings")
+                updates = SessionSettingsUpdate.model_validate(
+                    payload["settings"]
+                )
+                applied = await self.connection.update_session(updates)
+                self.config = self.connection.config
+                result.set_property_from_json("session", json.dumps(applied))
+            else:
+                if payload:
+                    raise ValueError("this control accepts no properties")
+                if kind == ProviderCommand.CREATE_RESPONSE:
+                    await self.send_client_create_response()
+                    result.set_property_from_json("accepted", "true")
+                elif kind == ProviderCommand.INPUT_START:
+                    if not self.config.manual_turns:
+                        raise PrismError(
+                            "manual_turns_required",
+                            "Input start requires manual turns",
+                        )
+                    identity = await self.connection.send(
+                        {"type": "prism.input_audio_buffer.start"}
+                    )
+                    result.set_property_from_json(
+                        "event_id", json.dumps(identity)
+                    )
+                elif kind == ProviderCommand.INPUT_COMMIT:
+                    identity = await self.connection.send(
+                        {"type": "input_audio_buffer.commit"}
+                    )
+                    result.set_property_from_json(
+                        "event_id", json.dumps(identity)
+                    )
+                else:
+                    event = (
+                        "input_audio_buffer.clear"
+                        if kind == ProviderCommand.INPUT_CLEAR
+                        else "response.cancel"
+                    )
+                    await self.connection.acknowledged_request({"type": event})
+        except (ValueError, PrismError) as error:
+            result = CmdResult.create(StatusCode.ERROR, command)
+            result.set_property_from_json(
+                "error",
+                json.dumps(
+                    {
+                        "code": getattr(error, "code", "invalid_request"),
+                        "message": "Prism control could not be applied",
+                    }
+                ),
+            )
+            if isinstance(error, PrismError) and error.fatal:
+                await self._report(error.code, str(error), True)
+        await ten_env.return_result(result)
+
+    @staticmethod
+    def _event_metadata(event):
+        """Preserve server identities and send times without inventing playback times."""
+        return {
+            key: event[key]
+            for key in (
+                "event_id",
+                "server_time_ms",
+                "prism_request_event_id",
+                "response_id",
+                "item_id",
+            )
+            if key in event
+        }
+
+    async def _publish_event(self, event):
+        """Opt-in backend diagnostics omit binary audio payloads."""
+        if self.config is None or not self.config.emit_server_events:
+            return
+        snapshot = dict(event)
+        if snapshot.get("type") == "response.audio.delta":
+            snapshot.pop("delta", None)
+        data = Data.create("prism_server_event")
+        data.set_property_from_json(None, json.dumps({"event": snapshot}))
+        await self.ten_env.send_data(data)
+
+    async def _cancel_reviews(self, response_id=None):
+        tasks = [
+            task
+            for owner, task in self._review_tasks.values()
+            if response_id is None or owner == response_id
+        ]
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _review_chunk(self, request):
+        """The review extension runs independently of the provider event reader."""
+        command = Cmd.create("prism_review")
+        command.set_dests([Loc("", "", self.config.review_extension)])
+        command.set_property_from_json(
+            None, request.model_dump_json(exclude_none=True)
+        )
+        try:
+            result, error = await asyncio.wait_for(
+                self.ten_env.send_cmd(command),
+                self.config.prism_review.timeout_ms / 1000,
+            )
+            if (
+                error
+                or result is None
+                or result.get_status_code() != StatusCode.OK
+            ):
+                raise ValueError("review command failed")
+            payload, error = result.get_property_to_json("decision")
+            if error:
+                raise ValueError("review result is missing")
+            decision = ReviewDecision.model_validate_json(payload)
+            if not self.connection.conversation.accepts_output(
+                request.response_id
+            ):
+                return
+            await self.connection.send(
+                {
+                    "type": "prism.review.result",
+                    "review_id": request.review_id,
+                    **decision.model_dump(mode="json", exclude_none=True),
+                }
+            )
+        except (ValueError, PrismError, asyncio.TimeoutError):
+            await self._report(
+                "review_callback_failed",
+                "Review decision unavailable; server timeout policy applies",
+                False,
+            )
+
     async def _add_history(self, item):
         content_type = "input_text" if item.role == "user" else "text"
         await self.connection.acknowledged_request(
@@ -228,12 +402,49 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
 
     async def _on_event(self, event):
         kind = event["type"]
-        if (
-            kind == "input_audio_buffer.speech_started"
-            and self.config.interrupt_response
+        await self._publish_event(event)
+        if kind == "prism.review.requested":
+            request = ReviewRequest.model_validate(event)
+            if (
+                self.config.prism_review is None
+                or self.config.review_extension is None
+            ):
+                raise PrismError(
+                    "unexpected_review", "Review was not configured"
+                )
+            reply = self.connection.conversation.reply(request.response_id)
+            if (
+                not self.connection.conversation.accepts_output(
+                    request.response_id
+                )
+                or request.review_id in reply.review_ids
+            ):
+                return
+            reply.review_ids.add(request.review_id)
+            if len(self._review_tasks) >= 64:
+                await self._report(
+                    "review_capacity",
+                    "Too many pending reviews; server timeout policy applies",
+                    False,
+                )
+                return
+            task = asyncio.create_task(self._review_chunk(request))
+            self._review_tasks[request.review_id] = (request.response_id, task)
+            task.add_done_callback(
+                lambda _task: self._review_tasks.pop(request.review_id, None)
+            )
+            return
+        if kind == "response.done":
+            await self._cancel_reviews(event["response"]["id"])
+        if kind == "input_audio_buffer.speech_started" and (
+            self.connection.config.manual_turns
+            or self.connection.config.interrupt_response
         ):
             self.leftover_bytes = b""
-            await self.send_server_interrupted(MLLMServerInterrupt())
+            await self._cancel_reviews()
+            await self.send_server_interrupted(
+                MLLMServerInterrupt(metadata=self._event_metadata(event))
+            )
             for (
                 response_id,
                 reply,
@@ -252,13 +463,18 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                         )
                     )
         elif kind in {
+            "conversation.item.input_audio_transcription.delta",
             "conversation.item.input_audio_transcription.completed",
             "conversation.item.input_audio_transcription.failed",
         }:
             transcript = event.get("transcript", "")
+            final = kind != "conversation.item.input_audio_transcription.delta"
             await self.send_server_input_transcript(
                 MLLMServerInputTranscript(
-                    content=transcript, delta=transcript, final=True
+                    content=transcript,
+                    delta=event.get("delta", transcript),
+                    final=final,
+                    metadata=self._event_metadata(event),
                 )
             )
             if kind.endswith("failed"):
@@ -291,7 +507,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                         content=reply.transcript,
                         delta=delta,
                         final=final,
-                        metadata={"response_id": response_id},
+                        metadata=self._event_metadata(event),
                     )
                 )
         elif kind == "response.function_call_arguments.done":
@@ -300,6 +516,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                     call_id=event["call_id"],
                     name=event["name"],
                     arguments=event["arguments"],
+                    metadata=self._event_metadata(event),
                 )
             )
         elif kind == "error":
@@ -311,7 +528,8 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                     if error.get("scope") == "session"
                     else "Prism refused a request"
                 ),
-                error.get("scope") == "session",
+                error.get("scope") == "session"
+                or self.connection.terminal_error is not None,
             )
 
     async def _report(self, code, message, fatal):
