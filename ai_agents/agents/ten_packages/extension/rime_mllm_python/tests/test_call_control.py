@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from prism_test_protocol.config import SessionSettingsUpdate
 from test_extension import next_data
 
 
@@ -67,8 +68,9 @@ async def test_provider_error_closes_only_fatal_calls(ten_modules, code):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("change_policy", [False, True])
 async def test_interruption_closes_partial_caption_once_and_filters_late_output(
-    peer, ten_modules
+    peer, ten_modules, change_policy
 ):
     environment = ten_modules.environment(
         {"endpoint": peer.url, "api_key": "test-only"}
@@ -89,6 +91,11 @@ async def test_interruption_closes_partial_caption_once_and_filters_late_output(
         assert not (
             await next_data(environment, "mllm_server_output_transcript")
         )["final"]
+        if change_policy:
+            await provider.connection.update_session(
+                SessionSettingsUpdate(interrupt_response=False)
+            )
+        await peer.send({"type": "prism.input_audio_buffer.speech_hint"})
         await peer.send({"type": "input_audio_buffer.speech_started"})
         await next_data(environment, "mllm_server_interrupted")
         closed = await next_data(environment, "mllm_server_output_transcript")

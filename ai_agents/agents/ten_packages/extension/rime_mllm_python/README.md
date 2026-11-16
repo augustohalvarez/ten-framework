@@ -90,6 +90,9 @@ Mutable settings are `voice`, `prompt`, `speed`, `interrupt_response`,
 An accepted update changes local settings only after `session.updated` arrives;
 a refusal leaves them unchanged. Settings updates and tool registration are
 serialized. Omitted fields keep their values; null does not reset them.
+Interruption changes apply to later replies. The adapter follows the server's
+confirmed `speech_started` event when clearing current playback, even if a
+new setting disables interruption for the next reply.
 
 ```python
 import json

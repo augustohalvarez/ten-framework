@@ -436,10 +436,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
             return
         if kind == "response.done":
             await self._cancel_reviews(event["response"]["id"])
-        if kind == "input_audio_buffer.speech_started" and (
-            self.connection.config.manual_turns
-            or self.connection.config.interrupt_response
-        ):
+        if kind == "input_audio_buffer.speech_started":
             self.leftover_bytes = b""
             await self._cancel_reviews()
             await self.send_server_interrupted(
@@ -457,6 +454,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                             delta="",
                             final=True,
                             metadata={
+                                **self._event_metadata(event),
                                 "response_id": response_id,
                                 "interrupted": True,
                             },
