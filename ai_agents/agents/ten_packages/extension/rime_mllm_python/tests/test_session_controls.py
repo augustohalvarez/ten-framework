@@ -320,7 +320,9 @@ def test_manifest_declares_configuration_commands_and_diagnostics():
     assert "prism_update_session" in {
         item["name"] for item in manifest["api"]["cmd_in"]
     }
-    assert manifest["api"]["cmd_out"][0]["name"] == "prism_review"
+    review = manifest["api"]["cmd_out"][0]
+    assert review["name"] == "prism_review"
+    assert review["property"]["properties"]["server_time_ms"]["type"] == "int64"
 
 
 @pytest.mark.asyncio

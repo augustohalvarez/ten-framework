@@ -34,7 +34,7 @@ def request(identity, index=0):
         "item_id": "item",
         "index": index,
         "text": "Please check this.",
-        "server_time_ms": 123,
+        "server_time_ms": 1792857632978,
     }
 
 
@@ -83,7 +83,7 @@ async def test_parallel_reviews_allow_replace_and_stop_without_blocking_reader(
         for _ in range(2):
             command = await asyncio.wait_for(environment.commands.get(), 2)
             assert command.name == "prism_review"
-            assert command.payload["server_time_ms"] == 123
+            assert command.payload["server_time_ms"] == 1792857632978
         await peer.send(
             {
                 "type": "response.text.delta",

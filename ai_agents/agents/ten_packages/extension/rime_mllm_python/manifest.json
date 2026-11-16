@@ -172,15 +172,16 @@
                 "type": "object",
                 "properties": {}
               },
-              "event_id": {
-                "type": "string"
-              },
-              "accepted": {
-                "type": "bool"
-              },
               "error": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -194,19 +195,19 @@
         "result": {
           "property": {
             "properties": {
-              "session": {
-                "type": "object",
-                "properties": {}
-              },
               "event_id": {
                 "type": "string"
               },
-              "accepted": {
-                "type": "bool"
-              },
               "error": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -220,19 +221,19 @@
         "result": {
           "property": {
             "properties": {
-              "session": {
-                "type": "object",
-                "properties": {}
-              },
               "event_id": {
                 "type": "string"
               },
-              "accepted": {
-                "type": "bool"
-              },
               "error": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -246,19 +247,16 @@
         "result": {
           "property": {
             "properties": {
-              "session": {
-                "type": "object",
-                "properties": {}
-              },
-              "event_id": {
-                "type": "string"
-              },
-              "accepted": {
-                "type": "bool"
-              },
               "error": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -272,19 +270,19 @@
         "result": {
           "property": {
             "properties": {
-              "session": {
-                "type": "object",
-                "properties": {}
-              },
-              "event_id": {
-                "type": "string"
-              },
               "accepted": {
                 "type": "bool"
               },
               "error": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -298,19 +296,16 @@
         "result": {
           "property": {
             "properties": {
-              "session": {
-                "type": "object",
-                "properties": {}
-              },
-              "event_id": {
-                "type": "string"
-              },
-              "accepted": {
-                "type": "bool"
-              },
               "error": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -341,7 +336,7 @@
               "type": "string"
             },
             "server_time_ms": {
-              "type": "int32"
+              "type": "int64"
             }
           },
           "required": [
