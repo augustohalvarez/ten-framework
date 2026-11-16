@@ -89,7 +89,11 @@ The existing `voice_assistant_realtime` graph uses OpenAI. Credentials for the
 unselected provider are not required.
 
 Prism handles turn detection and uses its playback estimate because the RTC
-extension does not declare measured playback reports. See the
+extension does not declare measured playback reports. The example pins
+`agora_rtc` to `0.27.0-rc2`. The Prism graph sets `flush_by_unpub` to the string
+`"true"`, so interruption flushes also unpublish the outgoing audio track.
+Receiving clients must handle the track being published again for the next reply.
+This does not provide a measured playback position or completion receipt. See the
 [Rime extension documentation](../../ten_packages/extension/rime_mllm_python/README.md)
 for configuration, tool behavior, interruption limits, and required RTC testing.
 

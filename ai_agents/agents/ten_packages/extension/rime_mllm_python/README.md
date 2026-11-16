@@ -53,6 +53,12 @@ When caller speech starts, the controller sends `flush` to Agora RTC and the
 adapter rejects later output from interrupted replies. Tools execute outside
 the controller's event loop so a slow tool cannot hold up that flush.
 
+The realtime example pins `agora_rtc` to `0.27.0-rc2` and sets the Prism graph's
+`flush_by_unpub` to the string `"true"`. Flush clears the local pending queues
+and RTC sender buffer, then unpublishes the outgoing audio track. Receiving
+clients must handle the next audio publication to resume playback. A successful
+flush result confirms local operations; it does not report remote playback.
+
 Playback timing uses **Prism's server estimate**. The inspected RTC API does
 not declare a reply-relative played-position or completion callback. The adapter
 sends neither `conversation.item.truncate` nor `prism.playback.drained` based on

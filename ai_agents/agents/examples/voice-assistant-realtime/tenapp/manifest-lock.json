@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.27",
-      "hash": "3cb246f95ec5e22b2c1a44ed6c09d75af07755030172fa6abc97f35822405c77",
+      "version": "0.11.75",
+      "hash": "fd429241b6906827423fb30371793540f158b4da430a8e63452709dd5e982e32",
       "dependencies": [
         {
           "type": "system",
@@ -22,8 +22,8 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "0.23.9-t1",
-      "hash": "6f08c87c362d30bbfd831899435fec06982a2924bd9cc0f5cb7e936974bf5731",
+      "version": "0.27.0-rc2",
+      "hash": "6228041e582a660778bcb146addde101b7b7d8332f8f4a6f6652de5a463f425d",
       "dependencies": [
         {
           "type": "system",
@@ -44,8 +44,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.22",
-      "hash": "27e5467c5dc841757f5a6f52e70b0d2c09903be84ade73b404b45c6cac9888f8",
+      "version": "0.7.65",
+      "hash": "dab665679e7145f5b9f62cc495cea51432861675bc5b930ff6fc5f21810de233",
       "dependencies": [
         {
           "type": "system",
@@ -56,8 +56,8 @@
     {
       "type": "extension",
       "name": "streamid_adapter",
-      "version": "0.2.0",
-      "hash": "6df9a1b48a4007339ccbda84ff96a4ed4eb5df498b8fef021ca2302be7c55051",
+      "version": "0.2.1",
+      "hash": "9bd513b0d1032485ada19b7288c77e21ba01d621af91dd671c3bb2fbed36e670",
       "dependencies": [
         {
           "type": "system",
@@ -69,8 +69,8 @@
     {
       "type": "extension",
       "name": "azure_mllm_python",
-      "version": "0.2.0",
-      "hash": "23ada63d4e5d995fe13ecde3b87989b911cc5dcc7a401c70be578e82d156ed05",
+      "version": "0.2.2",
+      "hash": "6d16f1483c69fe2badaee0548d1663315029811a2c46f56ea7c98c46d20049c0",
       "dependencies": [
         {
           "type": "system",
@@ -82,8 +82,8 @@
     {
       "type": "extension",
       "name": "gemini_mllm_python",
-      "version": "0.2.0",
-      "hash": "8d37c2526e3f1ddcf57ef39da4c7aea0f9166b87147161de915d3687bbc58a4e",
+      "version": "0.2.1",
+      "hash": "7b072ee85722132fe7a8d06b067236de7473d76ab709d578c72303bd7800b48c",
       "dependencies": [
         {
           "type": "system",
@@ -99,8 +99,8 @@
     {
       "type": "extension",
       "name": "glm_mllm_python",
-      "version": "0.2.0",
-      "hash": "f0c7358654be9dca83dae78d1477938fd7e9ffb78e7fc4fedac575ecdb075021",
+      "version": "0.2.2",
+      "hash": "cfd5b1bdece995739c12a9e3ee6f41f17a6375e43f7d3b317a5b0275dfda39f3",
       "dependencies": [
         {
           "type": "system",
@@ -116,8 +116,8 @@
     {
       "type": "extension",
       "name": "openai_mllm_python",
-      "version": "0.2.0",
-      "hash": "37251262de24cb7c2c4a01a8aa0455dcfa93ed178a2f5cfebe9ffac8d58ec007",
+      "version": "0.2.2",
+      "hash": "4a5dd0f8d1a54afa73d8b5ef9fc25d7b8daea31f1876674f5a0cbfd4f44d925b",
       "dependencies": [
         {
           "type": "system",
@@ -133,8 +133,8 @@
     {
       "type": "extension",
       "name": "stepfun_mllm_python",
-      "version": "0.2.0",
-      "hash": "b51c721f7a3bee4f2f31a7a848ccce909a71ca26952fad9a0d50cfe744c239a0",
+      "version": "0.2.2",
+      "hash": "8fcdeb6e2865e61f5cfd51e8fb4bb1fdc189c61817a72a009278dbadbc922294",
       "dependencies": [
         {
           "type": "system",
@@ -150,8 +150,8 @@
     {
       "type": "extension",
       "name": "message_collector2",
-      "version": "0.2.0",
-      "hash": "b4cdc75c61ed572952e2f14bdb5c440f993d3a5bf2da6fe5f5cbb1b4d772a837",
+      "version": "0.2.1",
+      "hash": "41071d407402c084aa504675199ad2940672fc135400e92e596ac20b6f75dfbd",
       "dependencies": [
         {
           "type": "system",
@@ -163,8 +163,8 @@
     {
       "type": "extension",
       "name": "weatherapi_tool_python",
-      "version": "0.1.0",
-      "hash": "372a4ffffd03992ee2e7a50b0fe83d534b4ed49c0d15099fb0c9cf5ea5cc926c",
+      "version": "0.1.1",
+      "hash": "284202626f01d235dab90545413075d91801a24bc7d2b375cb3408ecfc6b7c5d",
       "dependencies": [
         {
           "type": "system",
@@ -174,10 +174,27 @@
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
     },
     {
+      "type": "extension",
+      "name": "rime_mllm_python",
+      "version": "0.1.0",
+      "hash": "3ed2b1129518f6c68897bc6ca1d034dc496d9a61c71d83ed82ef09268954ae78",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/rime_mllm_python"
+    },
+    {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.27",
-      "hash": "409c90d00363ff575f7e7d3c6285047c609748490ffb5da52910efc983941c91",
+      "version": "0.11.75",
+      "hash": "fecaed140e900d7fd033d7d9c24f72f25b27a932910192fa3610f4c717d872b8",
       "dependencies": [
         {
           "type": "system",
@@ -198,8 +215,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.27",
-      "hash": "96129244e41310723b93f2eeef06c41d51eb8086d60a703d3665495af3880050",
+      "version": "0.11.75",
+      "hash": "748e3985f5ac29496c664bc53ef5b81ee373f247cd5054b4f56dc1797af5582c",
       "supports": [
         {
           "os": "linux",
@@ -210,8 +227,8 @@
     {
       "type": "system",
       "name": "agora_rtc_sdk",
-      "version": "4.4.32-141",
-      "hash": "d0a96b4672127492eee249f123750638071f9bcb673b5371320c8e16cdaff1b5",
+      "version": "4.6.31-131",
+      "hash": "e78624c0064336656582e44dbad13252d006ec834374be05d22774c05b123f9a",
       "supports": [
         {
           "os": "linux",
@@ -222,8 +239,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.27",
-      "hash": "a15c56876f5303b0c47d4019a51e9586f449d38a1cf52b5848746174c1bc5838",
+      "version": "0.11.75",
+      "hash": "d367ec095a8c7a4f8571feaa33e669ae513f7200d5867624fe856d5d937efa13",
       "dependencies": [
         {
           "type": "system",

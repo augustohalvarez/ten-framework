@@ -183,6 +183,7 @@
                 "publish_audio": true,
                 "publish_data": true,
                 "enable_agora_asr": false,
+                "flush_by_unpub": "true",
                 "subscribe_audio_sample_rate": 16000,
                 "subscribe_audio_num_of_channels": 1
               }
