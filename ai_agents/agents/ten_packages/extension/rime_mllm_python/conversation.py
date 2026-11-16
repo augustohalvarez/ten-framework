@@ -9,6 +9,7 @@ class Reply:
 
     generation: int
     transcript: str = ""
+    caption_final: bool = False
     completed: bool = False
     terminal: bool = False
     calls: set[str] = field(default_factory=set)

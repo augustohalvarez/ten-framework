@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Literal, Optional, Union, Dict, Any
 from ten_ai_base.types import LLMToolMetadata
+from ten_ai_base.message import ModuleError
 
 
 # ==== Base Event ====
@@ -94,6 +95,14 @@ class FunctionCallEvent(AgentEventBase):
     arguments: str
 
 
+class ProviderErrorEvent(AgentEventBase):
+    """A provider failure; negative module codes terminate the call."""
+
+    type: Literal["data"] = "data"
+    name: Literal["error"] = "error"
+    error: ModuleError
+
+
 # ==== Unified Event Union ====
 
 AgentEvent = Union[
@@ -105,4 +114,5 @@ AgentEvent = Union[
     SessionReadyEvent,
     ServerInterruptEvent,
     FunctionCallEvent,
+    ProviderErrorEvent,
 ]

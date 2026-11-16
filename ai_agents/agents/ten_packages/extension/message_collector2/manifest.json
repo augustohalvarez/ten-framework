@@ -28,7 +28,14 @@
         "name": "message"
       },
       {
-        "name": "flush"
+        "name": "flush",
+        "property": {
+          "properties": {
+            "preserve_final": {
+              "type": "bool"
+            }
+          }
+        }
       }
     ],
     "data_out": [

@@ -22,9 +22,11 @@ from ten_ai_base.struct import (
 from ..helper import _send_cmd, _send_data
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult
+from ten_ai_base.message import ModuleError
 from .events import (
     AgentEvent,
     FunctionCallEvent,
+    ProviderErrorEvent,
     InputTranscriptEvent,
     OutputTranscriptEvent,
     ServerInterruptEvent,
@@ -76,7 +78,14 @@ class Agent:
         data_name = data.get_name()
         self.ten_env.log_info(f"on_data: {data_name}")
         try:
-            if data_name == DATA_MLLM_OUT_REQUEST_TRANSCRIPT:
+            if data_name == "error":
+                payload, _ = data.get_property_to_json(None)
+                await self.event_queue.put(
+                    ProviderErrorEvent(
+                        error=ModuleError.model_validate_json(payload)
+                    )
+                )
+            elif data_name == DATA_MLLM_OUT_REQUEST_TRANSCRIPT:
                 transcript_json, _ = data.get_property_to_json(None)
                 transcript = MLLMServerInputTranscript.model_validate_json(
                     transcript_json

@@ -17,12 +17,14 @@ from ten_runtime import (
     AsyncTenEnv,
     Cmd,
     Data,
+    Loc,
     StatusCode,
 )
 
 from .agent.agent import Agent
 from .agent.events import (
     FunctionCallEvent,
+    ProviderErrorEvent,
     InputTranscriptEvent,
     OutputTranscriptEvent,
     ServerInterruptEvent,
@@ -107,6 +109,20 @@ class MainControlExtension(AsyncExtension):
                 event = await self.agent.get_event()
 
                 match event:
+                    case ProviderErrorEvent():
+                        if event.error.code < 0:
+                            self.ten_env.log_error(
+                                "Provider failed; closing call"
+                            )
+                            self.session_ready = False
+                            await self._interrupt()
+                            command = Cmd.create("ten:close_app")
+                            command.set_dests([Loc("", "", "")])
+                            await self.ten_env.send_cmd(command)
+                            return
+                        self.ten_env.log_warn(
+                            "Provider reported a recoverable error"
+                        )
                     case UserJoinedEvent():
                         self._rtc_user_count += 1
                         await self._greeting_if_ready()
@@ -145,6 +161,7 @@ class MainControlExtension(AsyncExtension):
                             text=event.content,
                             final=event.final,
                             stream_id=stream_id,
+                            metadata=event.metadata,
                         )
 
                     case OutputTranscriptEvent():
@@ -154,6 +171,7 @@ class MainControlExtension(AsyncExtension):
                             text=event.content,
                             final=event.is_final,
                             stream_id=100,
+                            metadata=event.metadata,
                         )
                     case ServerInterruptEvent():
                         # Handle server interrupt events
@@ -204,7 +222,12 @@ class MainControlExtension(AsyncExtension):
             )
 
     async def _send_transcript(
-        self, role: str, text: str, final: bool, stream_id: int
+        self,
+        role: str,
+        text: str,
+        final: bool,
+        stream_id: int,
+        metadata: dict | None = None,
     ):
         """
         Sends the transcript (ASR or LLM output) to the message collector.
@@ -220,6 +243,9 @@ class MainControlExtension(AsyncExtension):
                 "text_ts": int(time.time() * 1000),
                 "is_final": final,
                 "stream_id": stream_id,
+                "turn_id": (metadata or {}).get("response_id")
+                or (metadata or {}).get("item_id"),
+                "metadata": metadata or {},
             },
         )
         self.ten_env.log_info(
@@ -276,6 +302,9 @@ class MainControlExtension(AsyncExtension):
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
         result, error = await _send_cmd(self.ten_env, "flush", "agora_rtc")
+        await _send_data(
+            self.ten_env, "flush", "message_collector", {"preserve_final": True}
+        )
         if error or result is None or result.get_status_code() != StatusCode.OK:
             self.ten_env.log_error("[MainControlExtension] RTC flush failed")
         else:

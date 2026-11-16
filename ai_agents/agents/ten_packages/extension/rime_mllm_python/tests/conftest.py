@@ -140,7 +140,10 @@ class FakeMessage:
         return (json.dumps(value) if value is not None else ""), None
 
     def set_dests(self, _destinations):
-        pass
+        self.destinations = _destinations
+
+    def set_property_buf(self, name, value):
+        self.payload[name] = value
 
     def get_sample_rate(self):
         return self.sample_rate
@@ -213,7 +216,7 @@ class FakeEnv:
 
     async def send_cmd(self, command):
         await self.commands.put(command)
-        if command.name != "flush":
+        if command.name not in {"flush", "ten:close_app"}:
             await self.tool_gate.wait()
         return FakeResult(StatusCode.OK), None
 
@@ -245,6 +248,7 @@ def ten_modules():
         "ten_runtime",
         "ten_ai_base",
         "prism_test_main",
+        "prism_test_collector",
         "ten_packages.extension.rime_mllm_python",
     )
     previous = {
@@ -266,8 +270,20 @@ def ten_modules():
 
     runtime.Addon = type("Addon", (), {})
     runtime.register_addon_as_extension = register
+
+    async def lifecycle(*_args):
+        pass
+
     runtime.AsyncExtension = type(
-        "AsyncExtension", (), {"__init__": lambda self, name: None}
+        "AsyncExtension",
+        (),
+        {
+            "__init__": lambda self, name: None,
+            "on_init": lifecycle,
+            "on_start": lifecycle,
+            "on_stop": lifecycle,
+            "on_deinit": lifecycle,
+        },
     )
     runtime.AsyncTenEnv = FakeEnv
     runtime.TenEnv = FakeEnv
@@ -280,6 +296,9 @@ def ten_modules():
     runtime.Loc = lambda *args: args
     runtime.TenError = RuntimeError
     sys.modules["ten_runtime"] = runtime
+    async_environment = types.ModuleType("ten_runtime.async_ten_env")
+    async_environment.AsyncTenEnv = FakeEnv
+    sys.modules[async_environment.__name__] = async_environment
     package = types.ModuleType("ten_ai_base")
     package.__path__ = [str(Path(base_path) / "ten_ai_base")]
     sys.modules["ten_ai_base"] = package
@@ -290,8 +309,14 @@ def ten_modules():
     main = types.ModuleType("prism_test_main")
     main.__path__ = [str(main_path)]
     sys.modules["prism_test_main"] = main
+    collector = types.ModuleType("prism_test_collector")
+    collector.__path__ = [
+        str(Path(__file__).resolve().parents[2] / "message_collector2")
+    ]
+    sys.modules[collector.__name__] = collector
     try:
         yield types.SimpleNamespace(
+            collector=importlib.import_module("prism_test_collector.extension"),
             extension=importlib.import_module(
                 "ten_packages.extension.rime_mllm_python.extension"
             ),

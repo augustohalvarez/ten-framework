@@ -271,7 +271,8 @@
                     "mllm_server_output_transcript",
                     "mllm_server_session_ready",
                     "mllm_server_interrupted",
-                    "mllm_server_function_call"
+                    "mllm_server_function_call",
+                    "error"
                   ],
                   "source": [
                     {

@@ -234,6 +234,23 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
         ):
             self.leftover_bytes = b""
             await self.send_server_interrupted(MLLMServerInterrupt())
+            for (
+                response_id,
+                reply,
+            ) in self.connection.conversation.replies.items():
+                if reply.transcript and not reply.caption_final:
+                    reply.caption_final = True
+                    await self.send_server_output_text(
+                        MLLMServerOutputTranscript(
+                            content=reply.transcript,
+                            delta="",
+                            final=True,
+                            metadata={
+                                "response_id": response_id,
+                                "interrupted": True,
+                            },
+                        )
+                    )
         elif kind in {
             "conversation.item.input_audio_transcription.completed",
             "conversation.item.input_audio_transcription.failed",
@@ -264,13 +281,17 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                 await self.send_server_output_audio_data(audio)
             else:
                 final = kind == "response.text.done"
+                reply.caption_final = final
                 delta = event.get("delta", "")
                 reply.transcript = (
                     event["text"] if final else reply.transcript + delta
                 )
                 await self.send_server_output_text(
                     MLLMServerOutputTranscript(
-                        content=reply.transcript, delta=delta, final=final
+                        content=reply.transcript,
+                        delta=delta,
+                        final=final,
+                        metadata={"response_id": response_id},
                     )
                 )
         elif kind == "response.function_call_arguments.done":
