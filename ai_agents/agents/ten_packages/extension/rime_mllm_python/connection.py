@@ -227,7 +227,11 @@ class PrismConnection:
             request = self._triggers.popleft()
             event_id = self.event_id()
             self._typed_ready = False
-            self._trigger_inflight = (event_id, request)
+            self._trigger_inflight = (
+                event_id,
+                request,
+                self.conversation.generation,
+            )
             await self.send(
                 {
                     "type": "response.create",
@@ -280,9 +284,12 @@ class PrismConnection:
                 request_id == self._trigger_inflight[0]
                 or error.get("code") == "typed_turn_superseded"
             ):
-                _, request = self._trigger_inflight
+                _, request, generation = self._trigger_inflight
                 self._trigger_inflight = None
-                if error.get("code") == "typed_turn_busy":
+                if (
+                    error.get("code") == "typed_turn_busy"
+                    and generation == self.conversation.generation
+                ):
                     self._triggers.appendleft(request)
                     self._typed_ready = False
             if error.get("scope") == "tool_roundtrip":
@@ -322,6 +329,7 @@ class PrismConnection:
                 self._trigger_inflight = None
         elif kind == "input_audio_buffer.speech_started":
             self.conversation.interrupt()
+            self._triggers.clear()
             self._typed_ready = False
         elif kind == "response.function_call_arguments.done":
             if not self.conversation.function_call(

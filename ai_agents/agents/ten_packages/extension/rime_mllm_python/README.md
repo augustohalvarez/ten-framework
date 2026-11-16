@@ -226,6 +226,8 @@ Interrupted or expired tool rounds accept late results without starting a
 continuation. Missing acknowledgments end the session with a fatal error;
 requests with unknown outcomes are not replayed.
 Typed text and the example's greeting wait for Prism's idle/readiness event.
+New confirmed caller speech supersedes queued typed/proactive requests, so an
+old greeting cannot start after the caller's newer turn.
 Completed history may be seeded before connection; live context replacement is
 refused explicitly. This provider accepts audio and text, not video input.
 

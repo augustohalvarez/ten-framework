@@ -376,3 +376,38 @@ def test_config_redacts_credentials_and_refuses_unsafe_endpoint():
         RimeRealtimeConfig(startup_retries=-1)
     with pytest.raises(ValueError):
         RimeRealtimeConfig(endpoint="wss://example.com:invalid/realtime")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("inflight", [False, True])
+async def test_new_caller_speech_supersedes_unsent_and_busy_typed_requests(
+    peer, connection, inflight
+):
+    client, events = connection
+    await client.start()
+    await peer.request("session.update")
+    await client.trigger("An old greeting")
+    if inflight:
+        await peer.send({"type": "prism.typed_input.ready"})
+        old = await peer.request("response.create")
+    await peer.send({"type": "input_audio_buffer.speech_started"})
+    await receive(events, "input_audio_buffer.speech_started")
+    if inflight:
+        await peer.send(
+            {
+                "type": "error",
+                "error": {
+                    "scope": "event",
+                    "code": "typed_turn_busy",
+                    "event_id": old["event_id"],
+                },
+            }
+        )
+        await receive(events, "error")
+    await peer.send({"type": "prism.typed_input.ready"})
+    await receive(events, "prism.typed_input.ready")
+    assert peer.requests.empty()
+    await client.trigger("The new request")
+    assert (await peer.request("response.create"))["response"][
+        "prism_input_text"
+    ] == "The new request"
