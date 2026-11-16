@@ -169,7 +169,8 @@
           "property": {
             "properties": {
               "session": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               },
               "event_id": {
                 "type": "string"
@@ -178,7 +179,8 @@
                 "type": "bool"
               },
               "error": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -191,7 +193,8 @@
           "property": {
             "properties": {
               "session": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               },
               "event_id": {
                 "type": "string"
@@ -200,7 +203,8 @@
                 "type": "bool"
               },
               "error": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -213,7 +217,8 @@
           "property": {
             "properties": {
               "session": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               },
               "event_id": {
                 "type": "string"
@@ -222,7 +227,8 @@
                 "type": "bool"
               },
               "error": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -235,7 +241,8 @@
           "property": {
             "properties": {
               "session": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               },
               "event_id": {
                 "type": "string"
@@ -244,7 +251,8 @@
                 "type": "bool"
               },
               "error": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -257,7 +265,8 @@
           "property": {
             "properties": {
               "session": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               },
               "event_id": {
                 "type": "string"
@@ -266,7 +275,8 @@
                 "type": "bool"
               },
               "error": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -279,7 +289,8 @@
           "property": {
             "properties": {
               "session": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               },
               "event_id": {
                 "type": "string"
@@ -288,7 +299,8 @@
                 "type": "bool"
               },
               "error": {
-                "type": "object"
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -361,7 +373,8 @@
         "property": {
           "properties": {
             "event": {
-              "type": "object"
+              "type": "object",
+              "properties": {}
             }
           },
           "required": [
