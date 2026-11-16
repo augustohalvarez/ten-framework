@@ -364,3 +364,13 @@ async def test_long_typed_text_and_history_reach_the_server_and_its_limits_apply
         assert provider.is_connected()
     finally:
         await provider.on_stop(environment)
+
+
+def test_empty_command_schemas_satisfy_native_runtime_property_parser():
+    """TEN's native property parser requires properties even for no-argument commands."""
+    manifest = json.loads(
+        (Path(__file__).parents[1] / "manifest.json").read_text()
+    )
+    for command in manifest["api"]["cmd_in"]:
+        assert isinstance(command["property"].get("properties"), dict)
+        assert isinstance(command["result"]["property"].get("properties"), dict)

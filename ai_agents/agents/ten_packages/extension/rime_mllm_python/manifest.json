@@ -188,7 +188,9 @@
       },
       {
         "name": "prism_input_audio_start",
-        "property": {},
+        "property": {
+          "properties": {}
+        },
         "result": {
           "property": {
             "properties": {
@@ -212,7 +214,9 @@
       },
       {
         "name": "prism_input_audio_commit",
-        "property": {},
+        "property": {
+          "properties": {}
+        },
         "result": {
           "property": {
             "properties": {
@@ -236,7 +240,9 @@
       },
       {
         "name": "prism_input_audio_clear",
-        "property": {},
+        "property": {
+          "properties": {}
+        },
         "result": {
           "property": {
             "properties": {
@@ -260,7 +266,9 @@
       },
       {
         "name": "prism_create_response",
-        "property": {},
+        "property": {
+          "properties": {}
+        },
         "result": {
           "property": {
             "properties": {
@@ -284,7 +292,9 @@
       },
       {
         "name": "prism_cancel_response",
-        "property": {},
+        "property": {
+          "properties": {}
+        },
         "result": {
           "property": {
             "properties": {
