@@ -1,5 +1,8 @@
 # Prism realtime extension implementation plan
 
+Follow-up: [feature backlog](prism-feature-backlog.md) and
+[November 15 end-to-end/design review](prism-integration-review-2026-11-15.md).
+
 Updated: 2026-11-11. Status: implementation and protocol checks complete;
 Linux RTC acceptance checks pending.
 
