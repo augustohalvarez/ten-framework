@@ -9,7 +9,11 @@ from typing import Awaitable, Callable
 
 import aiohttp
 
-from .config import RimeRealtimeConfig, SessionSettingsUpdate
+from .config import (
+    MUTABLE_TURN_DETECTION_FIELDS,
+    RimeRealtimeConfig,
+    SessionSettingsUpdate,
+)
 from .conversation import Conversation
 
 
@@ -174,6 +178,14 @@ class PrismConnection:
             if not self.ready:
                 raise PrismError(
                     "not_ready", "Prism session is not initialized"
+                )
+            if self.config.manual_turns and any(
+                name in updates.model_fields_set
+                for name in MUTABLE_TURN_DETECTION_FIELDS
+            ):
+                raise PrismError(
+                    "manual_turns_setting",
+                    "Manual turns do not use automatic interruption settings",
                 )
             candidate = RimeRealtimeConfig.model_validate(
                 {

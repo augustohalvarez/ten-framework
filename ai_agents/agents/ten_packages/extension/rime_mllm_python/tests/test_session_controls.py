@@ -306,6 +306,21 @@ async def test_ten_command_updates_and_manual_controls(peer, ten_modules):
             ),
         )
         assert (await environment.results.get()).get_status_code() == 1
+        for settings in [
+            {"interrupt_response": True},
+            {"interrupt_min_words": 2},
+            {"interrupt_phrases": ["stop"]},
+            {"acknowledgment_phrases": []},
+        ]:
+            await provider.on_cmd(
+                environment,
+                ten_modules.message(
+                    "prism_update_session", {"settings": settings}
+                ),
+            )
+            rejected = await environment.results.get()
+            assert rejected.get_status_code() == 1
+            assert rejected.payload["error"]["code"] == "manual_turns_setting"
     finally:
         await provider.on_stop(environment)
 
@@ -376,3 +391,98 @@ def test_empty_command_schemas_satisfy_native_runtime_property_parser():
     for command in manifest["api"]["cmd_in"]:
         assert isinstance(command["property"].get("properties"), dict)
         assert isinstance(command["result"]["property"].get("properties"), dict)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "command_name,wire_name,acknowledgment",
+    [
+        (
+            "prism_input_audio_clear",
+            "input_audio_buffer.clear",
+            "input_audio_buffer.cleared",
+        ),
+        ("prism_cancel_response", "response.cancel", "response.done"),
+    ],
+)
+@pytest.mark.parametrize("refused", [False, True])
+async def test_clear_and_cancel_wait_for_correlated_server_outcomes(
+    peer, ten_modules, command_name, wire_name, acknowledgment, refused
+):
+    environment = ten_modules.environment(
+        {"endpoint": peer.url, "api_key": "test-only"}
+    )
+    provider = ten_modules.extension.RimeRealtimeExtension("v2v")
+    await provider.on_init(environment)
+    try:
+        await provider.on_start(environment)
+        await next_data(environment, "mllm_server_session_ready")
+        await peer.send(
+            {"type": "response.created", "response": {"id": "reply"}}
+        )
+        control = asyncio.create_task(
+            provider.on_cmd(environment, ten_modules.message(command_name))
+        )
+        request = await peer.request(wire_name)
+        assert not control.done()
+        if refused:
+            await peer.send(
+                {
+                    "type": "error",
+                    "error": {
+                        "scope": "event",
+                        "code": "request_refused",
+                        "event_id": request["event_id"],
+                    },
+                }
+            )
+        else:
+            await peer.send(
+                {
+                    "type": acknowledgment,
+                    "prism_request_event_id": request["event_id"],
+                    "response": {"id": "reply", "status": "cancelled"},
+                }
+            )
+        await control
+        assert (await environment.results.get()).get_status_code() == int(
+            refused
+        )
+        assert provider.is_connected()
+    finally:
+        await provider.on_stop(environment)
+
+
+@pytest.mark.asyncio
+async def test_empty_manual_commit_reports_server_refusal_after_local_dispatch(
+    peer, ten_modules
+):
+    environment = ten_modules.environment(
+        {"endpoint": peer.url, "api_key": "test-only", "manual_turns": True}
+    )
+    provider = ten_modules.extension.RimeRealtimeExtension("v2v")
+    await provider.on_init(environment)
+    try:
+        await provider.on_start(environment)
+        await next_data(environment, "mllm_server_session_ready")
+        await provider.on_cmd(
+            environment, ten_modules.message("prism_input_audio_commit")
+        )
+        assert (await environment.results.get()).get_status_code() == 0
+        request = await peer.request("input_audio_buffer.commit")
+        await peer.send(
+            {
+                "type": "error",
+                "error": {
+                    "scope": "event",
+                    "code": "input_audio_buffer_commit_empty",
+                    "event_id": request["event_id"],
+                },
+            }
+        )
+        error = await next_data(environment, "error")
+        assert error["code"] > 0
+        assert error["vendor_info"]["code"] == "input_audio_buffer_commit_empty"
+        assert provider.is_connected()
+    finally:
+        await provider.on_stop(environment)

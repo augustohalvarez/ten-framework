@@ -17,6 +17,12 @@ INPUT_SAMPLE_RATE = 16000
 OUTPUT_SAMPLE_RATE = 24000
 SAMPLE_WIDTH = 2
 CHANNELS = 1
+MUTABLE_TURN_DETECTION_FIELDS = (
+    "interrupt_response",
+    "interrupt_min_words",
+    "interrupt_phrases",
+    "acknowledgment_phrases",
+)
 INPUT_FRAME_SECONDS = 0.02
 INPUT_FRAME_BYTES = int(INPUT_SAMPLE_RATE * INPUT_FRAME_SECONDS) * SAMPLE_WIDTH
 
@@ -192,15 +198,10 @@ class RimeRealtimeConfig(SessionControls):
 
     def session_settings(self, tools: list[dict]) -> dict:
         """Build only settings accepted by Prism's session.update."""
-        detection = {
-            "interrupt_response": self.interrupt_response,
-            "eagerness": self.eagerness.value,
-        }
         values = self.model_dump(mode="json", exclude_none=True)
+        detection = {"eagerness": self.eagerness.value}
         for name in (
-            "interrupt_min_words",
-            "interrupt_phrases",
-            "acknowledgment_phrases",
+            *MUTABLE_TURN_DETECTION_FIELDS,
             "prism_end_of_turn_timeout_ms",
             "end_of_turn_min_silence_ms",
         ):

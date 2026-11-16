@@ -92,7 +92,8 @@ a refusal leaves them unchanged. Settings updates and tool registration are
 serialized. Omitted fields keep their values; null does not reset them.
 Interruption changes apply to later replies. The adapter follows the server's
 confirmed `speech_started` event when clearing current playback, even if a
-new setting disables interruption for the next reply.
+new setting disables interruption for the next reply. Automatic interruption
+updates are refused in manual mode, where start/commit commands own the turn.
 
 ```python
 import json
