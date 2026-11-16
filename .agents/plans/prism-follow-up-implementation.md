@@ -16,7 +16,11 @@ An earlier RTC attempt hit the existing audio-backlog guard while broad checks
 ran concurrently; the isolated rerun passed. Whole-extension formatting passed
 for 1,048 files. Full-suite collection needs the other extensions' dependencies.
 
-Status: step 2 in progress.
+Status: implementation and verification complete. Changes are committed on
+`feat/prism-realtime-extension` for publication to the fork.
+
+All backlog interfaces are implemented. Verification results and limits are in
+[the follow-up report](prism-follow-up-validation-2026-11-16.md).
 
 Feature interface: configuration stays backward compatible; acknowledged
 `prism_update_session` commands change mutable settings. Initial-only settings

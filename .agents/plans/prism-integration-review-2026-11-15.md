@@ -4,6 +4,11 @@ Reviewed November 15, 2026, against
 `5c787998677db2b8f8b1afbe1f6eedcf6b38df26`. Provider runtime code is unchanged.
 Future API additions are tracked in [the feature backlog](prism-feature-backlog.md).
 
+Follow-up: R1–R3 are fixed; see the
+[implementation verification](prism-follow-up-validation-2026-11-16.md). R4 remains
+open and was excluded from the follow-up implementation. The findings and
+results below describe the original reviewed commit.
+
 ## Environment and scope
 
 The separate `ten-prism-demo` project was rebuilt from the reviewed commit.
