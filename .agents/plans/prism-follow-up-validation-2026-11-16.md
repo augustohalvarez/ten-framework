@@ -83,11 +83,13 @@ Timing observations below are functional evidence, not production benchmarks.
   the final manifests. Browser setup/desktop/mobile checks also passed.
 - Whole-extension Black check passed for **1,051 files**; implementation Pylint
   passed at **10.00/10**. The separate app's seven unit tests and Vite build pass.
-- The repository-wide `task test` was attempted in an isolated Linux environment.
-  It stops before the provider suite in `assemblyai_asr_python` because that
-  unrelated extension's test environment lacks `websockets`. The repository-wide
-  suite is **not green/complete**. A combined host collection also encounters
-  unrelated runtime doubles; the supported task runner isolates extension suites.
+- The subsequent complete agent-suite investigation removed the dependency
+  blocker: **1,450 passed, 8 failed, 9 skipped**. The eight failures reproduce on
+  pre-Prism source in NVIDIA Riva, Typesafe, and Whisper tests. Text Webhook's
+  runner executes no tests. See the
+  [full-suite report](prism-full-suite-validation-2026-11-16.md) for scope,
+  environment repairs, baseline reproduction, and the remaining coverage gap.
+  The overall suite remains failing; the Prism suite is green.
 
 Evidence is in the separate project's ignored `.cache/follow-up/`: native unit
 and full-suite logs, native fatal-startup evidence, feature-case event reports,
