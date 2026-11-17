@@ -82,6 +82,9 @@ core/src/ten_runtime/binding/nodejs/build
 # Claude Code
 .claude
 
+# Agent workspace files
+.agents/
+
 # Rust generated files
 core/src/ten_manager/target/
 core/src/ten_rust/target/

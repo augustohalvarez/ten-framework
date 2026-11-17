@@ -30,20 +30,6 @@ merge baseline (see docs/ai/L1/05_workflows.md):
 
 If the PR is not ASR-related, skip the ASR section.
 
-## TTS extension changes (required when applicable)
-
-If the diff changes implementation, configuration, dependencies, or tests
-inside `ai_agents/agents/ten_packages/extension/<tts-extension>/`, read
-`.agents/skills/ten-tts-review/SKILL.md` and follow it for those extension
-files. Load its referenced common, testing, transport, and new-extension
-guarder guides as instructed. For a newly added TTS extension, inspect the
-existing PR comments and verify current, passing guarder evidence, including
-the required result screenshot and downloadable PCM output.
-
-Do not apply that skill to `ten_ai_base`, `tts_guarder`, examples, graphs, or
-files outside the TTS extension directory. Its evidence standard and finding
-format take precedence over the generic checklist above.
-
 Report only actionable issues introduced by this PR. Keep locations tight and
 avoid summaries or praise when there are no findings.
 

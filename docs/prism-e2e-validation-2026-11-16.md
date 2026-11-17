@@ -62,7 +62,7 @@ captions and speech-level audio arrive rather than waiting for the full
 utterance to finish playing. Prism's playback position remains estimated;
 the integration sends no fabricated playback/truncate reports.
 
-The known R4 issue remains open: an acknowledgment timeout starts after the
+The acknowledgment-timeout issue remains open: the timeout starts after the
 WebSocket send, so acquiring the writer lock or a blocked write can exceed that
 timeout. These live scenarios do not force that condition.
 
