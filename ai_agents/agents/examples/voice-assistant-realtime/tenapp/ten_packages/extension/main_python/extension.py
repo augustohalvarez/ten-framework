@@ -53,7 +53,6 @@ class MainControlExtension(AsyncExtension):
         self._rtc_user_count: int = 0
         self.current_metadata: dict = {"session_id": "0"}
         self._event_task: asyncio.Task | None = None
-        self._tool_tasks: set[asyncio.Task] = set()
 
     async def on_init(self, ten_env: AsyncTenEnv):
         self.ten_env = ten_env
@@ -83,13 +82,12 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
-        tasks = list(self._tool_tasks)
+        tasks = []
         if self._event_task is not None:
             tasks.append(self._event_task)
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
-        self._tool_tasks.clear()
         if self.agent:
             await self.agent.stop()
 
@@ -133,15 +131,9 @@ class MainControlExtension(AsyncExtension):
                     case ToolRegisterEvent():
                         await self.agent.register_tool(event.tool, event.source)
                     case FunctionCallEvent():
-                        task = asyncio.create_task(
-                            self.agent.call_tool(
-                                event.call_id,
-                                event.function_name,
-                                event.arguments,
-                            )
+                        await self.agent.call_tool(
+                            event.call_id, event.function_name, event.arguments
                         )
-                        self._tool_tasks.add(task)
-                        task.add_done_callback(self._tool_finished)
                     case InputTranscriptEvent():
                         self.current_metadata = {
                             "session_id": event.metadata.get(
@@ -192,13 +184,6 @@ class MainControlExtension(AsyncExtension):
                 self.ten_env.log_error(
                     f"[MainControlExtension] Event processing error: {e}"
                 )
-
-    def _tool_finished(self, task):
-        self._tool_tasks.discard(task)
-        if not task.cancelled() and task.exception() is not None:
-            self.ten_env.log_error(
-                "[MainControlExtension] Tool result delivery failed"
-            )
 
     async def _greeting_if_ready(self):
         """

@@ -230,6 +230,15 @@
                 "voice": "aurora",
                 "prompt": "You are a helpful voice assistant. Answer briefly and use the available tools when needed."
               }
+            },
+            {
+              "type": "extension",
+              "name": "tool_dispatcher",
+              "addon": "rime_tool_dispatcher_python",
+              "extension_group": "tools",
+              "property": {
+                "provider_extension": "v2v"
+              }
             }
           ],
           "connections": [
@@ -273,7 +282,6 @@
                     "mllm_server_output_transcript",
                     "mllm_server_session_ready",
                     "mllm_server_interrupted",
-                    "mllm_server_function_call",
                     "error"
                   ],
                   "source": [
@@ -294,16 +302,6 @@
                       "extension": "agora_rtc"
                     }
                   ]
-                },
-                {
-                  "names": [
-                    "tool_register"
-                  ],
-                  "source": [
-                    {
-                      "extension": "weatherapi_tool_python"
-                    }
-                  ]
                 }
               ]
             },
@@ -315,6 +313,29 @@
                   "dest": [
                     {
                       "extension": "v2v"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tool_dispatcher",
+              "data": [
+                {
+                  "name": "mllm_server_function_call",
+                  "source": [
+                    {
+                      "extension": "v2v"
+                    }
+                  ]
+                }
+              ],
+              "cmd": [
+                {
+                  "name": "tool_register",
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
                     }
                   ]
                 }

@@ -6,7 +6,7 @@ reasoning, and spoken replies. TEN transports audio through Agora RTC, runs
 application tools, and delivers captions.
 
 Start with the example graph to understand the wiring, then read the new
-provider, the controller changes, and the shared caption collector. The sections
+provider, its tool dispatcher, the controller changes, and the shared caption collector. The sections
 below follow that order and identify the tests for each area.
 
 ## 1. Start with the realtime example
@@ -55,26 +55,42 @@ tool continuations wait for the parent reply and result acknowledgments; and
 review work cannot block microphone delivery or the WebSocket reader. Review
 callbacks belong to an application-provided extension connected in the graph.
 
-## 3. Review the modified call controller
+## 3. Read the added Prism tool dispatcher
+
+The new
+[`rime_tool_dispatcher_python/`](../ai_agents/agents/ten_packages/extension/rime_tool_dispatcher_python/)
+extension handles tool execution only in the Prism graph. `extension.py` receives
+tool registrations, retains their originating TEN extension, forwards metadata
+to the provider, and runs function calls on owned asynchronous tasks. Invalid or
+failed calls return a structured result with the original call ID. `manifest.json`
+declares the standard TEN tool and MLLM messages used for this routing.
+
+Check that the Prism graph routes registrations and function calls to this node
+instead of the call controller. The shared controller's tool implementation and
+dispatch behavior are preserved for the other providers. Tool acknowledgments,
+duplicate suppression, and continuation ordering remain in the Prism provider.
+The dispatcher replaces the controller on the tool route, with the same number
+of TEN message hops. It does not change the microphone or reply-audio path.
+
+## 4. Review the modified call controller
 
 These changes are in the realtime example's own
 [`tenapp/ten_packages/extension/main_python/`](../ai_agents/agents/examples/voice-assistant-realtime/tenapp/ten_packages/extension/main_python/).
 
 - [`extension.py`](../ai_agents/agents/examples/voice-assistant-realtime/tenapp/ten_packages/extension/main_python/extension.py)
-  runs tools in separate asynchronous tasks, handles fatal provider errors,
-  flushes RTC and pending partial captions, and preserves transcript metadata.
+  handles fatal provider errors, flushes RTC and pending partial captions, and
+  preserves transcript metadata.
 - [`agent/agent.py`](../ai_agents/agents/examples/voice-assistant-realtime/tenapp/ten_packages/extension/main_python/agent/agent.py)
-  routes provider errors and validates tool calls and results. Tool failures
-  return a structured result rather than leaving the model waiting.
+  routes provider errors. Its shared `call_tool` implementation retains the
+  existing behavior; Prism tool validation lives in the dispatcher.
 - [`agent/events.py`](../ai_agents/agents/examples/voice-assistant-realtime/tenapp/ten_packages/extension/main_python/agent/events.py)
   adds the typed provider-error event consumed by the controller.
 
-Check that a slow tool leaves interruption handling responsive, shutdown owns
-and cancels its tasks, fatal errors close the native call, and recoverable errors
+Check that shutdown owns its event task, fatal errors close the native call, and recoverable errors
 leave it usable. This controller also serves the example's OpenAI graph, making
 provider compatibility a review concern.
 
-## 4. Review the shared caption collector
+## 5. Review the shared caption collector
 
 In
 [`message_collector2/`](../ai_agents/agents/ten_packages/extension/message_collector2/),
@@ -87,20 +103,21 @@ latest text for the same turn. Other graphs retain FIFO partial updates by
 default. Review final-message preservation and queue/shutdown behavior with that
 shared scope in mind.
 
-## 5. Use the added tests to check the behavior
+## 6. Use the added tests to check the behavior
 
 All new tests live under the provider's
 [`tests/`](../ai_agents/agents/ten_packages/extension/rime_mllm_python/tests/)
 directory, including regression coverage for the controller and shared collector.
 
-| Test files                                     | Coverage to review                                                                                                            |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `test_connection.py`                           | Startup, authentication/refusals, acknowledgments, disconnects, tool ordering, queued turns, and audio buffering.             |
-| `test_extension.py` and `test_call_control.py` | TEN event translation, tools that do not block flush, fatal call cleanup, interrupted captions, and rejection of late output. |
-| `test_caption_queue.py`                        | Coalescing, final captions, packet framing, capacity, flush, and default behavior for other graphs.                           |
-| `test_session_controls.py`                     | Accepted/refused updates, native command schemas, transcripts/diagnostics, manual turns, and long text.                       |
-| `test_review.py`                               | Concurrent allow/replace/stop decisions, timeouts, and cancellation of pending reviews.                                       |
-| `conftest.py` and `bin/start`                  | Local WebSocket/test-runtime fixtures and the standalone test entry point discovered by the agent test command.               |
+| Test files                                     | Coverage to review                                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_connection.py`                           | Startup, authentication/refusals, acknowledgments, disconnects, tool ordering, queued turns, and audio buffering.                                               |
+| `test_extension.py` and `test_call_control.py` | TEN event translation, fatal call cleanup, interrupted captions, and rejection of late output.                                                                  |
+| `test_tool_dispatcher.py`                      | Tool registration and routing, correlated failures, concurrent execution, shutdown cleanup, and preservation of the shared controller's existing tool behavior. |
+| `test_caption_queue.py`                        | Coalescing, final captions, packet framing, capacity, flush, and default behavior for other graphs.                                                             |
+| `test_session_controls.py`                     | Accepted/refused updates, native command schemas, transcripts/diagnostics, manual turns, and long text.                                                         |
+| `test_review.py`                               | Concurrent allow/replace/stop decisions, timeouts, and cancellation of pending reviews.                                                                         |
+| `conftest.py` and `bin/start`                  | Local WebSocket/test-runtime fixtures and the standalone test entry point discovered by the agent test command.                                                 |
 
 From `ai_agents`, run the provider suite with:
 
@@ -108,13 +125,16 @@ From `ai_agents`, run the provider suite with:
 task test-extension EXTENSION=agents/ten_packages/extension/rime_mllm_python
 ```
 
-The results below record the November 16 validation of source revision
-`a1a4a469`, before subsequent upstream merges.
+The tool-dispatcher refactor passed 101 provider/regression tests on Python 3.10
+on macOS and Linux, plus live RTC checks for a complete tool round, interruption
+during a tool, and manual turns. Native startup-failure cleanup and both fresh
+and locked dependency installation also passed. An initial RTC attempt ended on
+the existing audio-backlog guard before any tool ran; an unchanged retry passed.
 
-The 88 provider/regression tests passed on Python 3.10 on macOS and Linux. They
-use local WebSockets and TEN base models with a native runtime test double.
-Separate validation with the real native worker, Prism, and RTC passed 17 browser
-scenarios, including 16 live calls, plus a native startup-failure check. See the
+The unit tests use local WebSockets and TEN base models with a native runtime
+test double. Earlier validation on November 16 at revision `a1a4a469` recorded
+88 tests and 17 browser scenarios, including 16 live calls, plus a native
+startup-failure check. See the
 [end-to-end validation report](prism-e2e-validation-2026-11-16.md).
 
 The broader agent-suite run recorded 1,450 passed, eight failed, and nine skipped.

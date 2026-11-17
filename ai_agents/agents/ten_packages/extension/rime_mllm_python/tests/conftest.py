@@ -121,6 +121,7 @@ class FakeMessage:
         self.sample_rate = 16000
         self.channels = 1
         self.width = 2
+        self.source = ""
 
     @classmethod
     def create(cls, name, *_args):
@@ -128,6 +129,9 @@ class FakeMessage:
 
     def get_name(self):
         return self.name
+
+    def get_source(self):
+        return types.SimpleNamespace(extension_name=self.source)
 
     def set_property_from_json(self, path, value):
         if path in {None, ""}:
@@ -209,6 +213,12 @@ class FakeEnv:
     async def get_property_to_json(self, _path):
         return json.dumps(self.properties), None
 
+    async def get_property_string(self, path):
+        value = self.properties.get(path)
+        return (
+            (value, None) if isinstance(value, str) else ("", ValueError(path))
+        )
+
     async def send_data(self, data):
         await self.data.put(data)
 
@@ -254,6 +264,7 @@ def ten_modules():
         "prism_test_main",
         "prism_test_collector",
         "ten_packages.extension.rime_mllm_python",
+        "ten_packages.extension.rime_tool_dispatcher_python",
     )
     previous = {
         name: module
@@ -327,6 +338,9 @@ def ten_modules():
             controller=importlib.import_module("prism_test_main.extension"),
             events=importlib.import_module("prism_test_main.agent.events"),
             agent=importlib.import_module("prism_test_main.agent.agent"),
+            dispatcher=importlib.import_module(
+                "ten_packages.extension.rime_tool_dispatcher_python.extension"
+            ),
             environment=FakeEnv,
             message=FakeMessage,
             registered=registered,

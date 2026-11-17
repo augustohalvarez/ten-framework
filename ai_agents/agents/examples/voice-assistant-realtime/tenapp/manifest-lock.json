@@ -191,6 +191,23 @@
       "path": "../../../ten_packages/extension/rime_mllm_python"
     },
     {
+      "type": "extension",
+      "name": "rime_tool_dispatcher_python",
+      "version": "0.1.0",
+      "hash": "3df3d97437000e208b67182eaaed4dba7a11ecc8ccf772265cbdc39d9adc74c1",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/rime_tool_dispatcher_python"
+    },
+    {
       "type": "system",
       "name": "ten_runtime_python",
       "version": "0.11.75",

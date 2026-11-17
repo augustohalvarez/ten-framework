@@ -44,6 +44,9 @@
     },
     {
       "path": "../../../ten_packages/extension/rime_mllm_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/rime_tool_dispatcher_python"
     }
   ],
   "scripts": {

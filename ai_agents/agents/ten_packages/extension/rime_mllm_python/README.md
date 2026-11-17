@@ -220,7 +220,13 @@ on your deployment.
 
 ## Tools, text, and recovery
 
-Tools register through TEN's standard MLLM interface. The adapter returns each
+The example routes tool registrations and function calls through
+`rime_tool_dispatcher_python`. It validates and executes tools on owned
+asynchronous tasks, then forwards standard MLLM results to this provider. The
+shared controller's tool path remains available to the other provider graphs.
+Applications can also supply their own tool executor through the MLLM interface.
+
+The adapter returns each
 result once and continues only after the parent reply finishes and every result
 is acknowledged. Tool execution failures produce a structured error result.
 Interrupted or expired tool rounds accept late results without starting a
