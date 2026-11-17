@@ -5,7 +5,7 @@ A real-time voice assistant optimized for ultra-low-latency conversation using v
 ## Features
 
 - **Ultra-Low Latency Voice Interaction**: Direct speech-to-speech conversation with minimal delay
-- **Multi-Provider Support**: Compatible with Rime Prism, OpenAI GPT Realtime, Azure Voice AI, Gemini 2.0 Flash, GLM, StepFun, and other voice-to-voice models
+- **Multi-Provider Support**: Compatible with OpenAI GPT Realtime, Azure Voice AI, Gemini 2.0 Flash, GLM, StepFun, Rime Prism, and other voice-to-voice models
 
 ## Prerequisites
 
@@ -15,12 +15,12 @@ A real-time voice assistant optimized for ultra-low-latency conversation using v
    - `AGORA_APP_ID` - Your Agora App ID (required)
 
 2. **Voice-to-Voice Model Provider** (choose one):
-   - **Rime Prism**: `RIME_API_KEY` - Select the `voice_assistant_prism` graph
    - **OpenAI**: `OPENAI_API_KEY` - For GPT Realtime
    - **Azure**: `AZURE_AI_FOUNDRY_API_KEY` and `AZURE_AI_FOUNDRY_BASE_URI` - For Azure Voice AI
    - **Gemini**: `GEMINI_API_KEY` - For Gemini 2.0 Flash
    - **GLM**: `GLM_API_KEY` - For GLM voice models
    - **StepFun**: `STEPFUN_API_KEY` - For StepFun voice models
+   - **Rime Prism**: `RIME_API_KEY` - For Prism speech-to-speech
 
 ### Optional Environment Variables
 
@@ -39,8 +39,6 @@ AGORA_APP_ID=your_agora_app_id_here
 AGORA_APP_CERTIFICATE=your_agora_certificate_here
 
 # Voice-to-Voice Model Provider (choose one)
-RIME_API_KEY=your_rime_api_key_here
-# OR
 OPENAI_API_KEY=your_openai_api_key_here
 # OR
 AZURE_AI_FOUNDRY_API_KEY=your_azure_api_key_here
@@ -51,6 +49,8 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GLM_API_KEY=your_glm_api_key_here
 # OR
 STEPFUN_API_KEY=your_stepfun_api_key_here
+# OR
+RIME_API_KEY=your_rime_api_key_here
 
 # Optional
 WEATHERAPI_API_KEY=your_weather_api_key_here
@@ -81,21 +81,6 @@ The realtime voice assistant starts with all capabilities enabled.
 - **TMAN Designer**: http://localhost:49483
 
 ## Configuration
-
-The `voice_assistant_prism` graph uses Rime Prism for speech-to-speech with
-16 kHz input and 24 kHz output. Set `RIME_API_KEY` in the ignored `ai_agents/.env`,
-run `task install` and `task run`, then select that graph in the playground.
-The existing `voice_assistant_realtime` graph uses OpenAI. Credentials for the
-unselected provider are not required.
-
-Prism handles turn detection and uses its playback estimate because the RTC
-extension does not declare measured playback reports. The example pins
-`agora_rtc` to `0.27.0-rc2`. The Prism graph sets `flush_by_unpub` to the string
-`"true"`, so interruption flushes also unpublish the outgoing audio track.
-Receiving clients must handle the track being published again for the next reply.
-This does not provide a measured playback position or completion receipt. See the
-[Rime extension documentation](../../ten_packages/extension/rime_mllm_python/README.md)
-for configuration, tool behavior, interruption limits, and required RTC testing.
 
 The realtime voice assistant is configured in `tenapp/property.json`:
 
@@ -152,6 +137,7 @@ The realtime voice assistant is configured in `tenapp/property.json`:
 | `GEMINI_API_KEY` | string | - | Gemini API key (required for Gemini 2.0 Flash) |
 | `GLM_API_KEY` | string | - | GLM API key (required for GLM voice models) |
 | `STEPFUN_API_KEY` | string | - | StepFun API key (required for StepFun voice models) |
+| `RIME_API_KEY` | string | - | Rime API key (required for Prism speech-to-speech) |
 | `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
 
 ## Customization
@@ -189,5 +175,6 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-re
 - [Gemini AI Documentation](https://ai.google.dev/gemini)
 - [GLM Documentation](https://glm.ai/docs)
 - [StepFun Documentation](https://stepfun.com/docs)
+- [Rime Prism Documentation](../../ten_packages/extension/rime_mllm_python/README.md)
 - [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
 - [TEN Framework Documentation](https://doc.theten.ai)
