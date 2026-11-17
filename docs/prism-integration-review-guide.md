@@ -156,6 +156,18 @@ coverage gap.
   Engine and Agents SDK releases, and live OpenAI regression checks, remain
   separate validation work.
 
+## Shared changes retained
+
+Tool execution is isolated, while the following changes remain shared to avoid
+duplicate controllers, transport code, or extra routing stages:
+
+| Area                                                      | Reason to keep shared                                                                                                                                                               |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provider error routing and event-task cleanup             | TEN's standard errors belong in call control. The Prism graph supplies the error route; shutdown and task ownership stay in one controller.                                         |
+| Caption metadata and interruption flushing                | Turn identity must survive the controller, which coordinates RTC and caption queues. A provider-only change cannot clear the downstream collector.                                  |
+| Collector queue bound, packet framing, and sender cleanup | These are transport safeguards for all consumers. Coalescing is already Prism-only; other graphs retain FIFO partial updates. A separate collector or queue policy adds complexity. |
+| RTC version pin                                           | Dependencies are app-level. The Prism graph alone enables track unpublishing; a separate RTC version would require another example app.                                             |
+
 The browser app and raw test evidence remain outside this repository. The
 `.agents/` directory is removed from tracking and ignored; this guide and the
 end-to-end report are maintained under `docs/`.
