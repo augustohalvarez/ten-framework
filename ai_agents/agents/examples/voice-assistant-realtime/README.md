@@ -175,6 +175,6 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-re
 - [Gemini AI Documentation](https://ai.google.dev/gemini)
 - [GLM Documentation](https://glm.ai/docs)
 - [StepFun Documentation](https://stepfun.com/docs)
-- [Rime Prism Documentation](../../ten_packages/extension/rime_mllm_python/README.md)
+- [Rime Prism Documentation](https://docs.rime.ai/docs/prism/overview)
 - [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
 - [TEN Framework Documentation](https://doc.theten.ai)
