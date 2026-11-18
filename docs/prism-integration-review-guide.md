@@ -169,5 +169,5 @@ duplicate controllers, transport code, or extra routing stages:
 | RTC version pin                                           | Dependencies are app-level. The Prism graph alone enables track unpublishing; a separate RTC version would require another example app.                                             |
 
 The browser app and raw test evidence remain outside this repository. The
-`.agents/` directory is removed from tracking and ignored; this guide and the
-end-to-end report are maintained under `docs/`.
+`.agents/` directory matches upstream main; this guide and the end-to-end report
+are maintained under `docs/`.
